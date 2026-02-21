@@ -29,36 +29,37 @@ services:
       - SPRING_DATASOURCE_USERNAME=stats
       - SPRING_DATASOURCE_PASSWORD=stats
 
-  main-db:
-    image: postgres:16-alpine
-    container_name: main-db
-    ports:
-      - "5433:5432"
-    environment:
-      - POSTGRES_DB=main
-      - POSTGRES_USER=main
-      - POSTGRES_PASSWORD=main
-    healthcheck:
-      test: pg_isready -q -d main -U main
-      timeout: 5s
-      interval: 5s
-      retries: 10
-    volumes:
-      - main-db-data:/var/lib/postgresql/data
+  # main-server временно заглушил, я так понимаю пока на данном этапе он не нужен
+  # main-db:
+  #   image: postgres:16-alpine
+  #   container_name: main-db
+  #   ports:
+  #     - "5433:5432"
+  #   environment:
+  #     - POSTGRES_DB=main
+  #     - POSTGRES_USER=main
+  #     - POSTGRES_PASSWORD=main
+  #   healthcheck:
+  #     test: pg_isready -q -d main -U main
+  #     timeout: 5s
+  #     interval: 5s
+  #     retries: 10
+  #   volumes:
+  #     - main-db-data:/var/lib/postgresql/data
 
-  main-server:
-    build: ./ewm-main/main-server
-    container_name: main-server
-    ports:
-      - "8080:8080"
-    depends_on:
-      main-db:
-        condition: service_healthy
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://main-db:5432/main
-      - SPRING_DATASOURCE_USERNAME=main
-      - SPRING_DATASOURCE_PASSWORD=main
+  # main-server:
+  #   build: ./ewm-main/main-server
+  #   container_name: main-server
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     main-db:
+  #       condition: service_healthy
+  #   environment:
+  #     - SPRING_DATASOURCE_URL=jdbc:postgresql://main-db:5432/main
+  #     - SPRING_DATASOURCE_USERNAME=main
+  #     - SPRING_DATASOURCE_PASSWORD=main
 
 volumes:
   stats-db-data:
-  main-db-data:
+  # main-db-data:
