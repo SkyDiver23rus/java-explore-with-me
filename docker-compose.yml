@@ -29,36 +29,12 @@ services:
       - SPRING_DATASOURCE_USERNAME=stats
       - SPRING_DATASOURCE_PASSWORD=stats
 
-  main-server:
-    build: ./ewm-main/main-server
-    container_name: main-server
+  # Заглушка для основного сервиса
+  ewm-service:
+    build: ./ewm-service
+    container_name: ewm-service
     ports:
       - "8080:8080"
-    depends_on:
-      - stats-server
-    environment:
-      - STATS_SERVER_URL=http://stats-server:9090
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://main-db:5432/main
-      - SPRING_DATASOURCE_USERNAME=main
-      - SPRING_DATASOURCE_PASSWORD=main
-
-  main-db:
-    image: postgres:16-alpine
-    container_name: main-db
-    ports:
-      - "5433:5432"
-    environment:
-      - POSTGRES_DB=main
-      - POSTGRES_USER=main
-      - POSTGRES_PASSWORD=main
-    healthcheck:
-      test: pg_isready -q -d main -U main
-      timeout: 5s
-      interval: 5s
-      retries: 10
-    volumes:
-      - main-db-data:/var/lib/postgresql/data
 
 volumes:
   stats-db-data:
-  main-db-data:
