@@ -29,11 +29,22 @@ services:
       - SPRING_DATASOURCE_USERNAME=stats
       - SPRING_DATASOURCE_PASSWORD=stats
 
+  # Заглушка для ewm-service
+  ewm-service:
+    image: alpine:latest
+    container_name: ewm-service
+    command: ["sh", "-c", "echo 'EWM Service - will be implemented in stage 2'; sleep infinity"]
+    ports:
+      - "8080:8080"
+    depends_on:
+      - stats-server
+
+  # Основной сервис
   main-server:
     build: ./ewm-main/main-server
     container_name: main-server
     ports:
-      - "8080:8080"
+      - "8081:8080"
     depends_on:
       - stats-server
     environment:
