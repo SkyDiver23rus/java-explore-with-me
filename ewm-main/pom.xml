@@ -16,6 +16,8 @@
 
     <modules>
         <module>main-dto</module>
+        <module>main-server</module>
+        <module>main-client</module>
 
     </modules>
 
