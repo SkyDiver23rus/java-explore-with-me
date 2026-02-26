@@ -1,40 +1,68 @@
 services:
-  stats-db:
-    image: postgres:16-alpine
-    container_name: stats-db
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_DB=stats
-      - POSTGRES_USER=stats
-      - POSTGRES_PASSWORD=stats
-    healthcheck:
-      test: pg_isready -q -d stats -U stats
-      timeout: 5s
-      interval: 5s
-      retries: 10
-    volumes:
-      - stats-db-data:/var/lib/postgresql/data
-
   stats-server:
+    restart: on-failure
     build: ./ewm-stats/stats-server
-    container_name: stats-server
-    ports:
-      - "9090:9090"
+    image: stats-server-image
+    container_name: ewm-stats-server
     depends_on:
       stats-db:
         condition: service_healthy
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/stats
-      - SPRING_DATASOURCE_USERNAME=stats
-      - SPRING_DATASOURCE_PASSWORD=stats
-
-  # Заглушка для основного сервиса
-  ewm-service:
-    build: ./ewm-service
-    container_name: ewm-service
     ports:
-      - "8080:8080"
+      - "9090:9090"
+    environment:
+      - DB_NAME=stats
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - DB_HOST=stats-db
+      - DB_PORT=5432
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  stats-db:
+    image: postgres:15.1-alpine
+    container_name: EWM-stats-db
+    ports:
+      - "6541:5432"
+    environment:
+      - POSTGRES_DB=stats
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - stats-db-data:/var/lib/postgresql/data
+
+  ewm-db:
+    image: postgres:15.1-alpine
+    container_name: EWM-server-db
+    ports:
+      - "6542:5432"
+    environment:
+      - POSTGRES_DB=ewm-server
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ewm-db-data:/var/lib/postgresql/data
+
+  ewm-service:
+    image: alpine:latest
+    command: sleep infinity
+    container_name: ewm-service
+    depends_on:
+      - ewm-db
 
 volumes:
   stats-db-data:
+  ewm-db-data:

@@ -1,4 +1,3 @@
-FROM ubuntu:22.04
-RUN apt-get update && apt-get install -y openjdk-21-jre-headless && rm -rf /var/lib/apt/lists/*
-COPY target/*.jar app.jar
+FROM eclipse-temurin:21-jdk-alpine
+COPY target/stats-server-0.0.1-SNAPSHOT.jar /app.jar
 ENTRYPOINT ["java", "-jar", "/app.jar"]
