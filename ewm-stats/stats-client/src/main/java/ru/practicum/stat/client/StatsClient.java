@@ -1,8 +1,8 @@
 package ru.practicum.stat.client;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.practicum.stat.dto.EndpointHitDto;
@@ -12,25 +12,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-@Component
+@Slf4j
 public class StatsClient {
     private final RestTemplate restTemplate;
     private final String serverUrl;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public StatsClient() {
-        this.restTemplate = new RestTemplate();
-        this.serverUrl = "http://localhost:9090";
-    }
-
-    public StatsClient(String serverUrl) {
-        this.restTemplate = new RestTemplate();
-        this.serverUrl = serverUrl;
-    }
-
     public StatsClient(RestTemplate restTemplate, String serverUrl) {
         this.restTemplate = restTemplate;
         this.serverUrl = serverUrl;
+        log.info("StatsClient initialized with server URL: {}", serverUrl);
     }
 
     public EndpointHitDto saveHit(EndpointHitDto hitDto) {
