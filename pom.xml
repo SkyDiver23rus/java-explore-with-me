@@ -21,9 +21,7 @@
 
     <modules>
         <module>ewm-stats</module>
-        <module>ewm-main</module>
-        <module>ewm-service</module>
-    </modules>
+            </modules>
 
     <!-- Добавьте явное указание репозиториев -->
     <repositories>

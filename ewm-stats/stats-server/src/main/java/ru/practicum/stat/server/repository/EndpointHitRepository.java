@@ -14,7 +14,7 @@ public interface EndpointHitRepository extends JpaRepository<EndpointHit, Long> 
     // Статистика без учета unique и с фильтром по uris
     @Query("SELECT new ru.practicum.stat.dto.ViewStats(e.app, e.uri, COUNT(e)) " +
             "FROM EndpointHit e " +
-            "WHERE e.timestamp BETWEEN :start AND :end " +
+            "WHERE e.createTs BETWEEN :start AND :end " +
             "AND (:uris IS NULL OR e.uri IN :uris) " +
             "GROUP BY e.app, e.uri " +
             "ORDER BY COUNT(e) DESC")
@@ -25,7 +25,7 @@ public interface EndpointHitRepository extends JpaRepository<EndpointHit, Long> 
     // Статистика с учетом unique и с фильтром по uris
     @Query("SELECT new ru.practicum.stat.dto.ViewStats(e.app, e.uri, COUNT(DISTINCT e.ip)) " +
             "FROM EndpointHit e " +
-            "WHERE e.timestamp BETWEEN :start AND :end " +
+            "WHERE e.createTs BETWEEN :start AND :end " +
             "AND (:uris IS NULL OR e.uri IN :uris) " +
             "GROUP BY e.app, e.uri " +
             "ORDER BY COUNT(DISTINCT e.ip) DESC")
@@ -36,7 +36,7 @@ public interface EndpointHitRepository extends JpaRepository<EndpointHit, Long> 
     // Статистика без фильтра по uris (для случая, когда uris = null)
     @Query("SELECT new ru.practicum.stat.dto.ViewStats(e.app, e.uri, COUNT(e)) " +
             "FROM EndpointHit e " +
-            "WHERE e.timestamp BETWEEN :start AND :end " +
+            "WHERE e.createTs BETWEEN :start AND :end " +
             "GROUP BY e.app, e.uri " +
             "ORDER BY COUNT(e) DESC")
     List<ViewStats> findStatsWithoutUris(@Param("start") LocalDateTime start,
@@ -45,7 +45,7 @@ public interface EndpointHitRepository extends JpaRepository<EndpointHit, Long> 
     // Статистика с unique без фильтра по uris
     @Query("SELECT new ru.practicum.stat.dto.ViewStats(e.app, e.uri, COUNT(DISTINCT e.ip)) " +
             "FROM EndpointHit e " +
-            "WHERE e.timestamp BETWEEN :start AND :end " +
+            "WHERE e.createTs BETWEEN :start AND :end " +
             "GROUP BY e.app, e.uri " +
             "ORDER BY COUNT(DISTINCT e.ip) DESC")
     List<ViewStats> findUniqueStatsWithoutUris(@Param("start") LocalDateTime start,
@@ -54,7 +54,7 @@ public interface EndpointHitRepository extends JpaRepository<EndpointHit, Long> 
     // Статистика с фильтром по uris
     @Query("SELECT new ru.practicum.stat.dto.ViewStats(e.app, e.uri, COUNT(e)) " +
             "FROM EndpointHit e " +
-            "WHERE e.timestamp BETWEEN :start AND :end " +
+            "WHERE e.createTs BETWEEN :start AND :end " +
             "AND e.uri IN :uris " +
             "GROUP BY e.app, e.uri " +
             "ORDER BY COUNT(e) DESC")
@@ -65,7 +65,7 @@ public interface EndpointHitRepository extends JpaRepository<EndpointHit, Long> 
     // Статистика с unique и фильтром по uris
     @Query("SELECT new ru.practicum.stat.dto.ViewStats(e.app, e.uri, COUNT(DISTINCT e.ip)) " +
             "FROM EndpointHit e " +
-            "WHERE e.timestamp BETWEEN :start AND :end " +
+            "WHERE e.createTs BETWEEN :start AND :end " +
             "AND e.uri IN :uris " +
             "GROUP BY e.app, e.uri " +
             "ORDER BY COUNT(DISTINCT e.ip) DESC")

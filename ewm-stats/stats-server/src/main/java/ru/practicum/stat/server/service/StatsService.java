@@ -27,7 +27,7 @@ public class StatsService {
                 .app(dto.getApp())
                 .uri(dto.getUri())
                 .ip(dto.getIp())
-                .timestamp(dto.getTimestamp())
+                .createTs(dto.getTimestamp())
                 .build();
 
         EndpointHit savedHit = repository.save(hit);
