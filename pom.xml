@@ -4,26 +4,21 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.3.2</version>
         <relativePath/>
     </parent>
-
     <groupId>ru.practicum</groupId>
     <artifactId>explore-with-me</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-
     <name>Explore With Me</name>
-
     <modules>
         <module>ewm-stats</module>
-            </modules>
-
-    <!-- Добавьте явное указание репозиториев -->
+        <module>ewm-main</module>
+    </modules>
     <repositories>
         <repository>
             <id>central</id>
@@ -40,7 +35,6 @@
             </snapshots>
         </repository>
     </repositories>
-
     <pluginRepositories>
         <pluginRepository>
             <id>central</id>
@@ -50,18 +44,15 @@
             </snapshots>
         </pluginRepository>
     </pluginRepositories>
-
     <properties>
         <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <!-- Добавьте версии плагинов -->
         <checkstyle.version>10.3</checkstyle.version>
         <spotbugs.version>4.8.5.0</spotbugs.version>
         <jacoco.version>0.8.12</jacoco.version>
     </properties>
-
     <build>
         <pluginManagement>
             <plugins>
@@ -103,7 +94,6 @@
             </plugins>
         </pluginManagement>
     </build>
-
     <profiles>
         <profile>
             <id>check</id>
