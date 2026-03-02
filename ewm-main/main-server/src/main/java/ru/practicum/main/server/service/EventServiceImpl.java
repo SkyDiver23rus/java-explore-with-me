@@ -323,16 +323,23 @@ public class EventServiceImpl implements EventService {
             throw new ConflictException("Нельзя изменить опубликованное событие");
         }
 
-        // Проверка даты
+        // Проверка даты с округлением наносекунд
         if (dto.getEventDate() != null) {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now().withNano(0); // округляем до секунд
             LocalDateTime minEventDate = now.plusHours(2);
 
-            if (dto.getEventDate().isBefore(minEventDate)) {
+            // Округляем полученную дату до секунд для сравнения
+            LocalDateTime eventDate = dto.getEventDate().withNano(0);
+
+            log.info("Текущее время (без нс): {}", now);
+            log.info("Минимальная дата: {}", minEventDate);
+            log.info("Дата события (без нс): {}", eventDate);
+
+            if (eventDate.isBefore(minEventDate)) {
                 throw new BadRequestException(
                         String.format("Дата события должна быть не ранее чем через 2 часа от текущего момента. " +
                                         "Текущее время: %s, минимальная дата: %s, полученная дата: %s",
-                                now, minEventDate, dto.getEventDate())
+                                now, minEventDate, eventDate)
                 );
             }
         }
@@ -354,12 +361,7 @@ public class EventServiceImpl implements EventService {
         event = eventRepository.save(event);
         log.info("Пользователь id={} обновил событие id={}", userId, eventId);
 
-        Long views = event.getViews() != null ? event.getViews() : 0L;
-        try {
-            views = statsService.getViews("/events/" + eventId, DEFAULT_START, DEFAULT_END);
-        } catch (Exception e) {
-            log.error("Ошибка при получении статистики: {}", e.getMessage());
-        }
+        Long views = statsService.getViews("/events/" + eventId, DEFAULT_START, DEFAULT_END);
         return EventMapper.toFullDto(event, views);
     }
 
