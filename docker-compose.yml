@@ -5,11 +5,11 @@ services:
     ports:
       - "6541:5432"
     environment:
-      - POSTGRES_DB=stats
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_DB: stats
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     healthcheck:
-      test: pg_isready -q -d stats -U postgres
+      test: ["CMD-SHELL", "pg_isready -q -d stats -U postgres"]
       timeout: 5s
       interval: 10s
       retries: 5
@@ -25,14 +25,12 @@ services:
     ports:
       - "9090:9090"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - DB_NAME=stats
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - DB_HOST=stats-db
-      - DB_PORT=5432
-    volumes:
-      - ./ewm-stats/stats-server/target:/app
+      SPRING_PROFILES_ACTIVE: docker
+      DB_NAME: stats
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      DB_HOST: stats-db
+      DB_PORT: 5432
 
   ewm-db:
     image: postgres:15.1-alpine
@@ -40,18 +38,18 @@ services:
     ports:
       - "6542:5432"
     environment:
-      - POSTGRES_DB=ewm-main
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_DB: ewm-main
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     healthcheck:
-      test: pg_isready -q -d ewm-main -U postgres
+      test: ["CMD-SHELL", "pg_isready -q -d ewm-main -U postgres"]
       timeout: 5s
       interval: 10s
       retries: 5
     volumes:
       - ewm-db-data:/var/lib/postgresql/data
 
-  ewm-main:
+  ewm-service:
     build: ./ewm-main/main-server
     container_name: ewm-main-server
     depends_on:
@@ -62,12 +60,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - STATS_CLIENT_URL=http://stats-server:9090
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-main
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+      SPRING_PROFILES_ACTIVE: docker
+      STATS_SERVER_URL: http://stats-server:9090
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ewm-db:5432/ewm-main
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
 
 volumes:
   stats-db-data:
