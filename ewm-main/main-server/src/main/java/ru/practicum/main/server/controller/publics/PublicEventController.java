@@ -9,11 +9,15 @@ import ru.practicum.main.dto.EventFullDto;
 import ru.practicum.main.dto.EventShortDto;
 import ru.practicum.main.server.service.EventService;
 
+
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import ru.practicum.main.server.service.StatsService;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+
 
 @Slf4j
 @RestController
@@ -21,6 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PublicEventController {
     private final EventService eventService;
+    private final StatsService statsService;
 
     @GetMapping
     public List<EventShortDto> getEvents(
@@ -44,7 +49,7 @@ public class PublicEventController {
 
     @GetMapping("/{id}")
     public EventFullDto getEvent(@PathVariable Long id, HttpServletRequest request) {
-        log.info("Public: запрос события с id={}", id);
+        statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
         return eventService.getPublishedEventById(id, request);
     }
 }

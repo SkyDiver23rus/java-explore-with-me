@@ -2,6 +2,8 @@ package ru.practicum.main.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
@@ -11,8 +13,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class UpdateEventAdminRequest {
+
+    @Size(min = 20, max = 2000, message = "Аннотация должна содержать от 20 до 2000 символов")
     private String annotation;
+
     private Long category;
+
+    @Size(min = 20, max = 7000, message = "Описание должно содержать от 20 до 7000 символов")
     private String description;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -20,8 +27,13 @@ public class UpdateEventAdminRequest {
 
     private Location location;
     private Boolean paid;
+
+    @PositiveOrZero(message = "Лимит участников не может быть отрицательным")
     private Integer participantLimit;
+
     private Boolean requestModeration;
-    private String stateAction; // PUBLISH_EVENT, REJECT_EVENT
+    private String stateAction;
+
+    @Size(min = 3, max = 120, message = "Заголовок должен содержать от 3 до 120 символов")
     private String title;
 }
