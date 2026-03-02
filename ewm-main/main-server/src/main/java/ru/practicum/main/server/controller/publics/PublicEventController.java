@@ -3,6 +3,7 @@ package ru.practicum.main.server.controller.publics;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import org.springframework.validation.annotation.Validated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Slf4j
+@Validated
 @RestController
 @RequestMapping("/events")
 @RequiredArgsConstructor
@@ -38,11 +40,19 @@ public class PublicEventController {
             @RequestParam(defaultValue = "0") @PositiveOrZero int from,
             @RequestParam(defaultValue = "10") @Positive int size,
             HttpServletRequest request) {
+
         log.info("Public: поиск событий с from={}, size={}", from, size);
-        statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
+
+        try {
+            statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
+        } catch (Exception e) {
+            log.warn("Не удалось сохранить hit в статистику: {}", e.getMessage());
+        }
+
         List<EventShortDto> events = eventService.getPublishedEvents(
                 text, categories, paid, rangeStart, rangeEnd,
                 onlyAvailable, sort, from, size, request);
+
         log.info("Public: найдено событий: {}", events.size());
         return ResponseEntity.ok(events != null ? events : Collections.emptyList());
     }
