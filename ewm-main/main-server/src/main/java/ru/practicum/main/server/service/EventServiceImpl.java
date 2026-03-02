@@ -41,6 +41,8 @@ public class EventServiceImpl implements EventService {
     private static final LocalDateTime DEFAULT_START = LocalDateTime.now().minusYears(100);
     private static final LocalDateTime DEFAULT_END = LocalDateTime.now().plusYears(100);
 
+    // паблик
+
     @Override
     public List<EventShortDto> getPublishedEvents(String text, List<Long> categories, Boolean paid,
                                                   LocalDateTime rangeStart, LocalDateTime rangeEnd,
@@ -121,6 +123,8 @@ public class EventServiceImpl implements EventService {
         return EventMapper.toFullDto(event, event.getViews());
     }
 
+    // админ
+
     @Override
     public List<EventFullDto> searchEventsByAdmin(List<Long> users, List<Event.EventState> states,
                                                   List<Long> categories, LocalDateTime rangeStart,
@@ -164,6 +168,10 @@ public class EventServiceImpl implements EventService {
     public EventFullDto moderateEventByAdmin(Long eventId, UpdateEventAdminRequest dto) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие с id=" + eventId + " не найдено"));
+
+
+        // если админ передал новую дату и она уже наступила -> 400 Bad Request
+        validateEventDateNotPast(dto.getEventDate());
 
         if ("PUBLISH_EVENT".equals(dto.getStateAction())) {
             if (event.getState() != Event.EventState.PENDING) {
@@ -210,6 +218,21 @@ public class EventServiceImpl implements EventService {
             }
         }
     }
+
+    private void validateEventDateNotPast(LocalDateTime eventDate) {
+        if (eventDate == null) {
+            return;
+        }
+
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDateTime dateToCheck = eventDate.withNano(0);
+
+        if (!dateToCheck.isAfter(now)) {
+            throw new BadRequestException("Дата события не может быть в прошлом или настоящем");
+        }
+    }
+
+    //пользователь
 
     @Override
     public List<EventShortDto> getUserEvents(Long userId, int from, int size) {
@@ -293,8 +316,8 @@ public class EventServiceImpl implements EventService {
         LocalDateTime now = LocalDateTime.now().withNano(0);
         LocalDateTime dateToCheck = eventDate.withNano(0);
 
-        if (dateToCheck.isBefore(now)) {
-            throw new BadRequestException("Дата события не может быть в прошлом");
+        if (!dateToCheck.isAfter(now)) {
+            throw new BadRequestException("Дата события не может быть в прошлом или настоящем");
         }
 
         LocalDateTime minEventDate = now.plusHours(2);
