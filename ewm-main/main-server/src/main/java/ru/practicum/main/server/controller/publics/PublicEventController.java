@@ -15,6 +15,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import ru.practicum.main.server.service.StatsService;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -39,17 +40,14 @@ public class PublicEventController {
             @RequestParam(defaultValue = "10") @Positive int size,
             HttpServletRequest request) {
 
-        log.info("Public: поиск событий: text={}, categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
-                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
-
-        return eventService.getPublishedEvents(text, categories, paid, rangeStart, rangeEnd,
-                onlyAvailable, sort, from, size, request);
-    }
-
-    @GetMapping("/{id}")
-    public EventFullDto getEvent(@PathVariable Long id, HttpServletRequest request) {
         statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
-        log.info("Public: запрос события с id={}", id);
-        return eventService.getPublishedEventById(id, request);
+
+        log.info("Public: поиск событий: from={}, size={}", from, size);
+
+        List<EventShortDto> result = eventService.getPublishedEvents(
+                text, categories, paid, rangeStart, rangeEnd,
+                onlyAvailable, sort, from, size, request);
+
+        return result != null ? result : Collections.emptyList();
     }
 }

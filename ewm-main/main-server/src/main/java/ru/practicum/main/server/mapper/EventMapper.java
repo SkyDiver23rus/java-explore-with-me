@@ -107,7 +107,7 @@ public class EventMapper {
                 .requestModeration(event.getRequestModeration())
                 .state(event.getState().toString())
                 .title(event.getTitle())
-                .views(views != null ? views : event.getViews())
+                .views(views)
                 .build();
     }
 
