@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 
-
 @Slf4j
 @RestController
 @RequestMapping("/events")
@@ -50,6 +49,7 @@ public class PublicEventController {
     @GetMapping("/{id}")
     public EventFullDto getEvent(@PathVariable Long id, HttpServletRequest request) {
         statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
+        log.info("Public: запрос события с id={}", id);
         return eventService.getPublishedEventById(id, request);
     }
 }
