@@ -1,9 +1,9 @@
 package ru.practicum.main.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Getter
 @Setter
@@ -12,7 +12,7 @@ import lombok.*;
 @Builder
 public class CategoryDto {
 
-    @NotNull(message = "ID категории обязателен")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long id;
 
     @NotBlank(message = "Название категории не может быть пустым")

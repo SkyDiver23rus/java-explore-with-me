@@ -63,11 +63,11 @@ public class CategoryServiceImpl implements CategoryService {
                 categoryRepository.existsByName(dto.getName())) {
             throw new ConflictException("Категория с именем '" + dto.getName() + "' уже существует");
         }
-
         category.setName(dto.getName());
         category = categoryRepository.save(category);
         log.info("Обновлена категория: id={}, name={}", category.getId(), category.getName());
-        return CategoryMapper.toDto(category);
+        CategoryDto result = CategoryMapper.toDto(category);
+        return result;
     }
 
     @Override

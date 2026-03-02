@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.main.dto.CategoryDto;
 import ru.practicum.main.dto.NewCategoryDto;
+import ru.practicum.main.server.exception.BadRequestException;
 import ru.practicum.main.server.service.CategoryService;
 
 import jakarta.validation.Valid;
@@ -35,6 +36,10 @@ public class AdminCategoryController {
     public CategoryDto updateCategory(
             @PathVariable Long catId,
             @Valid @RequestBody CategoryDto dto) {
+        if (dto.getId() != null && !dto.getId().equals(catId)) {
+            throw new BadRequestException("ID в пути и в теле запроса не совпадают");
+        }
+        dto.setId(catId);
         log.info("Admin: обновление категории id={}, dto={}", catId, dto);
         return categoryService.updateCategory(catId, dto);
     }
