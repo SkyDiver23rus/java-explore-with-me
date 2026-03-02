@@ -21,6 +21,7 @@ import ru.practicum.main.server.repository.ParticipationRequestRepository;
 import ru.practicum.main.server.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -48,58 +49,73 @@ public class EventServiceImpl implements EventService {
                                                   LocalDateTime rangeStart, LocalDateTime rangeEnd,
                                                   Boolean onlyAvailable, String sort,
                                                   int from, int size, HttpServletRequest request) {
-        log.info("EventService: getPublishedEvents с from={}, size={}", from, size);
 
-        // Устанавливаем диапазон дат по умолчанию
-        if (rangeStart == null) {
-            rangeStart = LocalDateTime.now();
-            log.info("rangeStart установлен по умолчанию: {}", rangeStart);
-        }
-        if (rangeEnd == null) {
-            rangeEnd = DEFAULT_END;
-            log.info("rangeEnd установлен по умолчанию: {}", rangeEnd);
-        }
-
-        if (rangeStart.isAfter(rangeEnd)) {
-            throw new BadRequestException("Дата начала не может быть позже даты окончания");
-        }
-
-        // Сортировка
-        Sort sortBy;
-        if ("VIEWS".equals(sort)) {
-            sortBy = Sort.by(Sort.Direction.DESC, "views");
-            log.info("Сортировка по просмотрам");
-        } else {
-            sortBy = Sort.by(Sort.Direction.DESC, "eventDate");
-            log.info("Сортировка по дате");
-        }
-
-        // Защита от деления на ноль
+        log.info("getPublishedEvents: from={}, size={}", from, size);
         if (size <= 0) {
             size = 10;
-            log.warn("size был <= 0, установлен в 10");
+            log.warn("size был <= 0, установлен в 10 (значение по умолчанию)");
         }
 
-        int pageNumber = from / size;
-        Pageable pageable = PageRequest.of(pageNumber, size, sortBy);
-        log.info("EventService: pageNumber={}, pageSize={}", pageNumber, size);
-
-        List<Event> events = eventRepository.findPublishedEvents(
-                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, pageable);
-
-        log.info("EventService: найдено событий: {}", events.size());
-
-        // Всегда возвращаем список, даже пустой
-        if (events == null || events.isEmpty()) {
-            return Collections.emptyList();
+        if (from < 0) {
+            from = 0;
+            log.warn("from был < 0, установлен в 0");
         }
 
-        return events.stream()
-                .map(event -> {
-                    Long views = event.getViews() != null ? event.getViews() : 0L;
-                    return EventMapper.toShortDto(event, views);
-                })
-                .collect(Collectors.toList());
+        try {
+            // Устанавливаем диапазон дат по умолчанию
+            if (rangeStart == null) {
+                rangeStart = LocalDateTime.now();
+                log.info("rangeStart не задан, установлен в текущее время: {}", rangeStart);
+            }
+            if (rangeEnd == null) {
+                rangeEnd = DEFAULT_END;
+                log.info("rangeEnd не задан, установлен в DEFAULT_END: {}", rangeEnd);
+            }
+
+            if (rangeStart.isAfter(rangeEnd)) {
+                throw new BadRequestException("Дата начала не может быть позже даты окончания");
+            }
+            // Сортировка
+            Sort sortBy;
+            if ("VIEWS".equals(sort)) {
+                sortBy = Sort.by(Sort.Direction.DESC, "views");
+                log.info("Сортировка по просмотрам (VIEWS)");
+            } else {
+                sortBy = Sort.by(Sort.Direction.DESC, "eventDate");
+                log.info("Сортировка по дате события (EVENT_DATE)");
+            }
+            // Теперь безопасно, так как size > 0
+            int pageNumber = from / size;
+            log.info("pageNumber = {} (from={} / size={})", pageNumber, from, size);
+
+            Pageable pageable = PageRequest.of(pageNumber, size, sortBy);
+            log.info("Pageable: pageNumber={}, pageSize={}", pageNumber, size);
+
+            List<Event> events = eventRepository.findPublishedEvents(
+                    text, categories, paid, rangeStart, rangeEnd, onlyAvailable, pageable);
+
+            log.info("Найдено событий: {}", events.size());
+
+            // Всегда возвращаем список, даже пустой
+            if (events == null || events.isEmpty()) {
+                return Collections.emptyList();
+            }
+            return events.stream()
+                    .map(event -> {
+                        Long views = event.getViews() != null ? event.getViews() : 0L;
+                        return EventMapper.toShortDto(event, views);
+                    })
+                    .collect(Collectors.toList());
+
+        } catch (BadRequestException e) {
+            // Пробрасываем BadRequestException дальше (они превратятся в 400)
+            log.warn("BadRequestException в getPublishedEvents: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            // Логируем неожиданные ошибки и превращаем их в BadRequestException
+            log.error("Неожиданная ошибка в getPublishedEvents: {}", e.getMessage(), e);
+            throw new BadRequestException("Ошибка при поиске событий: " + e.getMessage());
+        }
     }
 
     @Override
@@ -218,7 +234,7 @@ public class EventServiceImpl implements EventService {
         return EventMapper.toFullDto(event, views);
     }
 
-    // МЕТОДЫ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ
+    //  МЕТОДЫ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ
 
     @Override
     public List<EventShortDto> getUserEvents(Long userId, int from, int size) {
@@ -299,13 +315,39 @@ public class EventServiceImpl implements EventService {
         return EventMapper.toFullDto(event, views);
     }
 
+    //ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+
+    private void validateEventDateForUpdate(LocalDateTime eventDate) {
+        if (eventDate == null) {
+            return; // если дата не указана, пропускаем валидацию
+        }
+
+        // Округляем наносекунды до секунд для корректного сравнения
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDateTime minEventDate = now.plusHours(2);
+        LocalDateTime dateToCheck = eventDate.withNano(0);
+
+        log.info("Валидация даты события:");
+        log.info("  Текущее время (без нс): {}", now);
+        log.info("  Минимальная допустимая дата: {}", minEventDate);
+        log.info("  Полученная дата (без нс): {}", dateToCheck);
+        log.info("  Разница в часах: {}", ChronoUnit.HOURS.between(now, dateToCheck));
+
+        if (dateToCheck.isBefore(minEventDate)) {
+            throw new BadRequestException(
+                    String.format("Дата события должна быть не ранее чем через 2 часа от текущего момента. " +
+                                    "Текущее время: %s, минимальная дата: %s, полученная дата: %s",
+                            now, minEventDate, dateToCheck)
+            );
+        }
+    }
+
     @Override
     @Transactional
     public EventFullDto updateEventByUser(Long userId, Long eventId, UpdateEventUserRequest dto) {
         log.info("ОБНОВЛЕНИЕ СОБЫТИЯ ПОЛЬЗОВАТЕЛЕМ");
         log.info("userId={}, eventId={}", userId, eventId);
         log.info("Полученный DTO: {}", dto);
-        log.info("eventDate в DTO: {}", dto.getEventDate());
 
         if (!userRepository.existsById(userId)) {
             throw new NotFoundException("Пользователь с id=" + userId + " не найден");
@@ -323,26 +365,8 @@ public class EventServiceImpl implements EventService {
             throw new ConflictException("Нельзя изменить опубликованное событие");
         }
 
-        // Проверка даты с округлением наносекунд
-        if (dto.getEventDate() != null) {
-            LocalDateTime now = LocalDateTime.now().withNano(0); // округляем до секунд
-            LocalDateTime minEventDate = now.plusHours(2);
-
-            // Округляем полученную дату до секунд для сравнения
-            LocalDateTime eventDate = dto.getEventDate().withNano(0);
-
-            log.info("Текущее время (без нс): {}", now);
-            log.info("Минимальная дата: {}", minEventDate);
-            log.info("Дата события (без нс): {}", eventDate);
-
-            if (eventDate.isBefore(minEventDate)) {
-                throw new BadRequestException(
-                        String.format("Дата события должна быть не ранее чем через 2 часа от текущего момента. " +
-                                        "Текущее время: %s, минимальная дата: %s, полученная дата: %s",
-                                now, minEventDate, eventDate)
-                );
-            }
-        }
+        // Валидация даты через отдельный метод
+        validateEventDateForUpdate(dto.getEventDate());
 
         // Обработка изменения статуса
         if ("SEND_TO_REVIEW".equals(dto.getStateAction())) {
@@ -361,7 +385,12 @@ public class EventServiceImpl implements EventService {
         event = eventRepository.save(event);
         log.info("Пользователь id={} обновил событие id={}", userId, eventId);
 
-        Long views = statsService.getViews("/events/" + eventId, DEFAULT_START, DEFAULT_END);
+        Long views = event.getViews() != null ? event.getViews() : 0L;
+        try {
+            views = statsService.getViews("/events/" + eventId, DEFAULT_START, DEFAULT_END);
+        } catch (Exception e) {
+            log.error("Ошибка при получении статистики: {}", e.getMessage());
+        }
         return EventMapper.toFullDto(event, views);
     }
 
