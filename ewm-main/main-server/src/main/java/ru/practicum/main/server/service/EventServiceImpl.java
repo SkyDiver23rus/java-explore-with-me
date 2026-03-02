@@ -20,7 +20,6 @@ import ru.practicum.main.server.repository.EventRepository;
 import ru.practicum.main.server.repository.ParticipationRequestRepository;
 import ru.practicum.main.server.repository.UserRepository;
 
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +40,7 @@ public class EventServiceImpl implements EventService {
     private static final LocalDateTime DEFAULT_START = LocalDateTime.now().minusYears(100);
     private static final LocalDateTime DEFAULT_END = LocalDateTime.now().plusYears(100);
 
-    // ПУБЛИЧНЫЕ МЕТОДЫ
+    //  ПУБЛИЧНЫЕ МЕТОДЫ
 
     @Override
     public List<EventShortDto> getPublishedEvents(String text, List<Long> categories, Boolean paid,
@@ -49,6 +48,7 @@ public class EventServiceImpl implements EventService {
                                                   Boolean onlyAvailable, String sort,
                                                   int from, int size, HttpServletRequest request) {
         log.info("EventService: getPublishedEvents с from={}, size={}", from, size);
+
         // Устанавливаем диапазон дат по умолчанию
         if (rangeStart == null) {
             rangeStart = LocalDateTime.now();
@@ -60,6 +60,7 @@ public class EventServiceImpl implements EventService {
         if (rangeStart.isAfter(rangeEnd)) {
             throw new BadRequestException("Дата начала не может быть позже даты окончания");
         }
+
         // Сортировка
         Sort sortBy;
         if ("VIEWS".equals(sort)) {
@@ -85,17 +86,22 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventFullDto getPublishedEventById(Long id, HttpServletRequest request) {
         log.info("Получение события id={} для публичного просмотра", id);
+
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Событие с id=" + id + " не найдено"));
+
         if (event.getState() != Event.EventState.PUBLISHED) {
             throw new NotFoundException("Событие с id=" + id + " не найдено");
         }
+
         log.info("Сохранение хита для события id={}, текущие просмотры={}", id, event.getViews());
         statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
+
         // Увеличиваем счётчик просмотров в БД
         event.setViews(event.getViews() + 1);
         event = eventRepository.save(event);
         log.info("После увеличения просмотры={}", event.getViews());
+
         return EventMapper.toFullDto(event, event.getViews());
     }
     //  МЕТОДЫ ДЛЯ АДМИНА
@@ -236,19 +242,27 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventFullDto updateEventByUser(Long userId, Long eventId, UpdateEventUserRequest dto) {
+        log.info("ОБНОВЛЕНИЕ СОБЫТИЯ ПОЛЬЗОВАТЕЛЕМ");
+        log.info("userId={}, eventId={}", userId, eventId);
+        log.info("Полученный DTO: {}", dto);
+        log.info("eventDate в DTO: {}", dto.getEventDate());
+
         if (!userRepository.existsById(userId)) {
             throw new NotFoundException("Пользователь с id=" + userId + " не найден");
         }
+
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие с id=" + eventId + " не найдено"));
 
         if (!event.getInitiator().getId().equals(userId)) {
             throw new NotFoundException("Событие с id=" + eventId + " не найдено у пользователя " + userId);
         }
+
         // Проверка статуса
         if (event.getState() == Event.EventState.PUBLISHED) {
             throw new ConflictException("Нельзя изменить опубликованное событие");
         }
+
         // Проверка даты
         if (dto.getEventDate() != null) {
             LocalDateTime now = LocalDateTime.now();
@@ -262,6 +276,7 @@ public class EventServiceImpl implements EventService {
                 );
             }
         }
+
         // Обработка изменения статуса
         if ("SEND_TO_REVIEW".equals(dto.getStateAction())) {
             event.setState(Event.EventState.PENDING);
