@@ -22,6 +22,7 @@ import ru.practicum.main.server.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -52,9 +53,11 @@ public class EventServiceImpl implements EventService {
         // Устанавливаем диапазон дат по умолчанию
         if (rangeStart == null) {
             rangeStart = LocalDateTime.now();
+            log.info("rangeStart установлен по умолчанию: {}", rangeStart);
         }
         if (rangeEnd == null) {
             rangeEnd = DEFAULT_END;
+            log.info("rangeEnd установлен по умолчанию: {}", rangeEnd);
         }
 
         if (rangeStart.isAfter(rangeEnd)) {
@@ -65,8 +68,16 @@ public class EventServiceImpl implements EventService {
         Sort sortBy;
         if ("VIEWS".equals(sort)) {
             sortBy = Sort.by(Sort.Direction.DESC, "views");
+            log.info("Сортировка по просмотрам");
         } else {
             sortBy = Sort.by(Sort.Direction.DESC, "eventDate");
+            log.info("Сортировка по дате");
+        }
+
+        // Защита от деления на ноль
+        if (size <= 0) {
+            size = 10;
+            log.warn("size был <= 0, установлен в 10");
         }
 
         int pageNumber = from / size;
@@ -78,8 +89,16 @@ public class EventServiceImpl implements EventService {
 
         log.info("EventService: найдено событий: {}", events.size());
 
+        // Всегда возвращаем список, даже пустой
+        if (events == null || events.isEmpty()) {
+            return Collections.emptyList();
+        }
+
         return events.stream()
-                .map(event -> EventMapper.toShortDto(event, event.getViews()))
+                .map(event -> {
+                    Long views = event.getViews() != null ? event.getViews() : 0L;
+                    return EventMapper.toShortDto(event, views);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -94,17 +113,24 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Событие с id=" + id + " не найдено");
         }
 
-        log.info("Сохранение хита для события id={}, текущие просмотры={}", id, event.getViews());
-        statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
+        // Сохраняем в статистику (игнорируем ошибки)
+        try {
+            statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
+            log.info("Хит сохранён для события id={}", id);
+        } catch (Exception e) {
+            log.error("Ошибка при сохранении статистики, но продолжаем: {}", e.getMessage());
+        }
 
         // Увеличиваем счётчик просмотров в БД
-        event.setViews(event.getViews() + 1);
+        Long oldViews = event.getViews() != null ? event.getViews() : 0L;
+        event.setViews(oldViews + 1);
         event = eventRepository.save(event);
-        log.info("После увеличения просмотры={}", event.getViews());
+        log.info("Просмотры: {} -> {}", oldViews, event.getViews());
 
         return EventMapper.toFullDto(event, event.getViews());
     }
-    //  МЕТОДЫ ДЛЯ АДМИНА
+
+    // МЕТОДЫ ДЛЯ АДМИНА
 
     @Override
     public List<EventFullDto> searchEventsByAdmin(List<Long> users, List<Event.EventState> states,
@@ -118,21 +144,33 @@ public class EventServiceImpl implements EventService {
             rangeEnd = DEFAULT_END;
         }
 
+        if (size <= 0) size = 10;
         Pageable pageable = PageRequest.of(from / size, size);
 
         List<Event> events = eventRepository.findEventsByAdmin(
                 users, states, categories, rangeStart, rangeEnd, pageable);
+
+        if (events == null || events.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         // Получаем просмотры для всех событий
         List<String> uris = events.stream()
                 .map(e -> "/events/" + e.getId())
                 .collect(Collectors.toList());
 
-        Map<String, Long> viewsMap = statsService.getViewsMap(DEFAULT_START, DEFAULT_END, uris);
+        Map<String, Long> viewsMap = Collections.emptyMap();
+        try {
+            viewsMap = statsService.getViewsMap(DEFAULT_START, DEFAULT_END, uris);
+        } catch (Exception e) {
+            log.error("Ошибка при получении статистики: {}", e.getMessage());
+        }
 
+        Map<String, Long> finalViewsMap = viewsMap;
         return events.stream()
                 .map(event -> {
-                    Long views = viewsMap.getOrDefault("/events/" + event.getId(), 0L);
+                    Long views = finalViewsMap.getOrDefault("/events/" + event.getId(),
+                            event.getViews() != null ? event.getViews() : 0L);
                     return EventMapper.toFullDto(event, views);
                 })
                 .collect(Collectors.toList());
@@ -171,11 +209,16 @@ public class EventServiceImpl implements EventService {
         event = eventRepository.save(event);
         log.info("Admin: изменено событие id={}, новый статус={}", eventId, event.getState());
 
-        Long views = statsService.getViews("/events/" + eventId, DEFAULT_START, DEFAULT_END);
+        Long views = event.getViews() != null ? event.getViews() : 0L;
+        try {
+            views = statsService.getViews("/events/" + eventId, DEFAULT_START, DEFAULT_END);
+        } catch (Exception e) {
+            log.error("Ошибка при получении статистики: {}", e.getMessage());
+        }
         return EventMapper.toFullDto(event, views);
     }
 
-    //  МЕТОДЫ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ
+    // МЕТОДЫ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ
 
     @Override
     public List<EventShortDto> getUserEvents(Long userId, int from, int size) {
@@ -183,19 +226,31 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Пользователь с id=" + userId + " не найден");
         }
 
+        if (size <= 0) size = 10;
         Pageable pageable = PageRequest.of(from / size, size);
         List<Event> events = eventRepository.findAllByInitiatorId(userId, pageable).getContent();
+
+        if (events == null || events.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         // Получаем просмотры
         List<String> uris = events.stream()
                 .map(e -> "/events/" + e.getId())
                 .collect(Collectors.toList());
 
-        Map<String, Long> viewsMap = statsService.getViewsMap(DEFAULT_START, DEFAULT_END, uris);
+        Map<String, Long> viewsMap = Collections.emptyMap();
+        try {
+            viewsMap = statsService.getViewsMap(DEFAULT_START, DEFAULT_END, uris);
+        } catch (Exception e) {
+            log.error("Ошибка при получении статистики: {}", e.getMessage());
+        }
 
+        Map<String, Long> finalViewsMap = viewsMap;
         return events.stream()
                 .map(event -> {
-                    Long views = viewsMap.getOrDefault("/events/" + event.getId(), 0L);
+                    Long views = finalViewsMap.getOrDefault("/events/" + event.getId(),
+                            event.getViews() != null ? event.getViews() : 0L);
                     return EventMapper.toShortDto(event, views);
                 })
                 .collect(Collectors.toList());
@@ -235,7 +290,12 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Событие с id=" + eventId + " не найдено у пользователя " + userId);
         }
 
-        Long views = statsService.getViews("/events/" + eventId, DEFAULT_START, DEFAULT_END);
+        Long views = event.getViews() != null ? event.getViews() : 0L;
+        try {
+            views = statsService.getViews("/events/" + eventId, DEFAULT_START, DEFAULT_END);
+        } catch (Exception e) {
+            log.error("Ошибка при получении статистики: {}", e.getMessage());
+        }
         return EventMapper.toFullDto(event, views);
     }
 
@@ -294,7 +354,12 @@ public class EventServiceImpl implements EventService {
         event = eventRepository.save(event);
         log.info("Пользователь id={} обновил событие id={}", userId, eventId);
 
-        Long views = statsService.getViews("/events/" + eventId, DEFAULT_START, DEFAULT_END);
+        Long views = event.getViews() != null ? event.getViews() : 0L;
+        try {
+            views = statsService.getViews("/events/" + eventId, DEFAULT_START, DEFAULT_END);
+        } catch (Exception e) {
+            log.error("Ошибка при получении статистики: {}", e.getMessage());
+        }
         return EventMapper.toFullDto(event, views);
     }
 
@@ -311,8 +376,12 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("Событие с id=" + eventId + " не принадлежит пользователю " + userId);
         }
 
-        return requestRepository.findAllByEventId(eventId)
-                .stream()
+        List<ParticipationRequest> requests = requestRepository.findAllByEventId(eventId);
+        if (requests == null || requests.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return requests.stream()
                 .map(ParticipationRequestMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -333,8 +402,8 @@ public class EventServiceImpl implements EventService {
         }
 
         // Проверка лимита участников
-        long confirmedRequests = event.getConfirmedRequests();
-        long participantLimit = event.getParticipantLimit();
+        long confirmedRequests = event.getConfirmedRequests() != null ? event.getConfirmedRequests() : 0L;
+        long participantLimit = event.getParticipantLimit() != null ? event.getParticipantLimit() : 0L;
 
         if (participantLimit > 0 && confirmedRequests >= participantLimit) {
             throw new ConflictException("Достигнут лимит участников");
