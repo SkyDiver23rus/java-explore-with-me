@@ -203,9 +203,8 @@ public class EventServiceImpl implements EventService {
             if (event.getState() != Event.EventState.PENDING) {
                 throw new ConflictException("Нельзя опубликовать событие в статусе " + event.getState());
             }
-            if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
-                throw new ConflictException("Нельзя опубликовать событие, которое начнется менее чем через час");
-            }
+
+            validateEventDateForAdmin(event.getEventDate(), dto.getStateAction());
         }
 
         // Проверка на отклонение
@@ -232,6 +231,28 @@ public class EventServiceImpl implements EventService {
             log.error("Ошибка при получении статистики: {}", e.getMessage());
         }
         return EventMapper.toFullDto(event, views);
+    }
+
+    private void validateEventDateForAdmin(LocalDateTime eventDate, String stateAction) {
+        if ("PUBLISH_EVENT".equals(stateAction) && eventDate != null) {
+            LocalDateTime now = LocalDateTime.now().withNano(0);
+            LocalDateTime minPublishDate = now.plusHours(1);
+
+            LocalDateTime dateToCheck = eventDate.withNano(0);
+
+            log.info("Валидация даты события для публикации админом:");
+            log.info("  Текущее время (без нс): {}", now);
+            log.info("  Минимальная допустимая дата для публикации: {}", minPublishDate);
+            log.info("  Дата события (без нс): {}", dateToCheck);
+
+            if (dateToCheck.isBefore(minPublishDate)) {
+                throw new ConflictException(
+                        String.format("Нельзя опубликовать событие, которое начнется менее чем через час. " +
+                                        "Текущее время: %s, минимальная дата: %s, дата события: %s",
+                                now, minPublishDate, dateToCheck)
+                );
+            }
+        }
     }
 
     //  МЕТОДЫ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ
