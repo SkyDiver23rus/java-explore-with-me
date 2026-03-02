@@ -91,23 +91,24 @@ public class EventMapper {
     }
 
     public static EventFullDto toFullDto(Event event, Long views) {
+        if (event == null) return null;
         return EventFullDto.builder()
                 .id(event.getId())
                 .annotation(event.getAnnotation())
-                .category(CategoryMapper.toDto(event.getCategory()))
+                .category(event.getCategory() != null ? CategoryMapper.toDto(event.getCategory()) : null)
                 .confirmedRequests(event.getConfirmedRequests())
                 .createdOn(event.getCreatedOn())
                 .description(event.getDescription())
                 .eventDate(event.getEventDate())
-                .initiator(UserMapper.toShortDto(event.getInitiator()))
-                .location(LocationMapper.toDto(event.getLocation()))
+                .initiator(event.getInitiator() != null ? UserMapper.toShortDto(event.getInitiator()) : null)
+                .location(event.getLocation() != null ? LocationMapper.toDto(event.getLocation()) : null)
                 .paid(event.getPaid())
                 .participantLimit(event.getParticipantLimit())
                 .publishedOn(event.getPublishedOn())
                 .requestModeration(event.getRequestModeration())
-                .state(event.getState().toString())
+                .state(event.getState() != null ? event.getState().toString() : null)
                 .title(event.getTitle())
-                .views(views)
+                .views(views != null ? views : event.getViews())
                 .build();
     }
 

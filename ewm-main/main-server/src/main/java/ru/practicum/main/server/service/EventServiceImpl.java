@@ -48,9 +48,7 @@ public class EventServiceImpl implements EventService {
                                                   LocalDateTime rangeStart, LocalDateTime rangeEnd,
                                                   Boolean onlyAvailable, String sort,
                                                   int from, int size, HttpServletRequest request) {
-
         log.info("EventService: getPublishedEvents с from={}, size={}", from, size);
-
         // Устанавливаем диапазон дат по умолчанию
         if (rangeStart == null) {
             rangeStart = LocalDateTime.now();
@@ -62,7 +60,6 @@ public class EventServiceImpl implements EventService {
         if (rangeStart.isAfter(rangeEnd)) {
             throw new BadRequestException("Дата начала не может быть позже даты окончания");
         }
-
         // Сортировка
         Sort sortBy;
         if ("VIEWS".equals(sort)) {
@@ -70,52 +67,32 @@ public class EventServiceImpl implements EventService {
         } else {
             sortBy = Sort.by(Sort.Direction.DESC, "eventDate");
         }
-        // from/size конвертируется в номер страницы
+
         int pageNumber = from / size;
         Pageable pageable = PageRequest.of(pageNumber, size, sortBy);
         log.info("EventService: pageNumber={}, pageSize={}", pageNumber, size);
 
-        // Поиск событий
         List<Event> events = eventRepository.findPublishedEvents(
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, pageable);
 
         log.info("EventService: найдено событий: {}", events.size());
-        // Получаем просмотры для всех событий
-        List<String> uris = events.stream()
-                .map(e -> "/events/" + e.getId())
-                .collect(Collectors.toList());
 
-        Map<String, Long> viewsMap = statsService.getViewsMap(DEFAULT_START, DEFAULT_END, uris);
-
-        List<EventShortDto> result = events.stream()
-                .map(event -> {
-                    Long views = viewsMap.getOrDefault("/events/" + event.getId(), event.getViews());
-                    return EventMapper.toShortDto(event, views);
-                })
+        return events.stream()
+                .map(event -> EventMapper.toShortDto(event, event.getViews()))
                 .collect(Collectors.toList());
-        // Всегда возвращаем список
-        return result;
     }
 
     @Override
     public EventFullDto getPublishedEventById(Long id, HttpServletRequest request) {
-        // Сохраняем в статистику
-        statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
-
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Событие с id=" + id + " не найдено"));
 
         if (event.getState() != Event.EventState.PUBLISHED) {
             throw new NotFoundException("Событие с id=" + id + " не найдено");
         }
-        // Увеличиваем счётчик просмотров в БД
+        statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
         event.setViews(event.getViews() + 1);
         event = eventRepository.save(event);
-
-        log.info("Событие id={}, просмотров в БД: {}", id, event.getViews());
-
-        Long viewsFromStats = statsService.getViews("/events/" + id, DEFAULT_START, DEFAULT_END);
-        log.info("Просмотры из статистики для события id={}: {}", id, viewsFromStats);
         return EventMapper.toFullDto(event, event.getViews());
     }
     //  МЕТОДЫ ДЛЯ АДМИНА
@@ -275,9 +252,11 @@ public class EventServiceImpl implements EventService {
             LocalDateTime minEventDate = now.plusHours(2);
 
             if (dto.getEventDate().isBefore(minEventDate)) {
-                throw new BadRequestException("Дата события должна быть не ранее чем через 2 часа от текущего момента. " +
-                        "Текущее время: " + now + ", минимальная дата: " + minEventDate +
-                        ", полученная дата: " + dto.getEventDate());
+                throw new BadRequestException(
+                        String.format("Дата события должна быть не ранее чем через 2 часа от текущего момента. " +
+                                        "Текущее время: %s, минимальная дата: %s, полученная дата: %s",
+                                now, minEventDate, dto.getEventDate())
+                );
             }
         }
         // Обработка изменения статуса

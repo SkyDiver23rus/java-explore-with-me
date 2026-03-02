@@ -1,23 +1,20 @@
 package ru.practicum.main.server.controller.publics;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.main.dto.EventFullDto;
 import ru.practicum.main.dto.EventShortDto;
 import ru.practicum.main.server.service.EventService;
-
-
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
 import ru.practicum.main.server.service.StatsService;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-
 
 @Slf4j
 @RestController
@@ -28,7 +25,7 @@ public class PublicEventController {
     private final StatsService statsService;
 
     @GetMapping
-    public List<EventShortDto> getEvents(
+    public ResponseEntity<List<EventShortDto>> getEvents(
             @RequestParam(required = false) String text,
             @RequestParam(required = false) List<Long> categories,
             @RequestParam(required = false) Boolean paid,
@@ -39,15 +36,11 @@ public class PublicEventController {
             @RequestParam(defaultValue = "0") @PositiveOrZero int from,
             @RequestParam(defaultValue = "10") @Positive int size,
             HttpServletRequest request) {
-
+        log.info("Public: поиск событий с from={}, size={}", from, size);
         statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
-
-        log.info("Public: поиск событий: from={}, size={}", from, size);
-
-        List<EventShortDto> result = eventService.getPublishedEvents(
+        List<EventShortDto> events = eventService.getPublishedEvents(
                 text, categories, paid, rangeStart, rangeEnd,
                 onlyAvailable, sort, from, size, request);
-
-        return result != null ? result : Collections.emptyList();
+        return ResponseEntity.ok(events != null ? events : Collections.emptyList());
     }
 }
