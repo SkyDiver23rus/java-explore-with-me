@@ -1,7 +1,9 @@
 package ru.practicum.main.server.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -9,6 +11,7 @@ import ru.practicum.main.dto.ApiError;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -47,6 +50,41 @@ public class ErrorHandler {
         return ApiError.builder()
                 .errors(Collections.singletonList(e.getClass().getName()))
                 .message(e.getMessage())
+                .reason("Incorrectly made request.")
+                .status(HttpStatus.BAD_REQUEST.name())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleValidationException(final MethodArgumentNotValidException e) {
+        log.error("400 Validation error: {}", e.getMessage());
+        String message = e.getBindingResult().getAllErrors().stream()
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+
+        return ApiError.builder()
+                .errors(e.getBindingResult().getAllErrors().stream()
+                        .map(error -> error.getDefaultMessage())
+                        .collect(Collectors.toList()))
+                .message(message)
+                .reason("Incorrectly made request.")
+                .status(HttpStatus.BAD_REQUEST.name())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleConstraintViolation(final jakarta.validation.ConstraintViolationException e) {
+        log.error("400 Constraint violation: {}", e.getMessage());
+        return ApiError.builder()
+                .errors(e.getConstraintViolations().stream()
+                        .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                        .collect(Collectors.toList()))
+                .message("Validation failed")
                 .reason("Incorrectly made request.")
                 .status(HttpStatus.BAD_REQUEST.name())
                 .timestamp(LocalDateTime.now())
