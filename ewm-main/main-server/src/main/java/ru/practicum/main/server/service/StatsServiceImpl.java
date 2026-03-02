@@ -31,20 +31,24 @@ public class StatsServiceImpl implements StatsService {
                     .ip(ip)
                     .timestamp(LocalDateTime.now())
                     .build();
+
+            log.info("Сохраняем хит: {}", hit);
             statsClient.saveHit(hit);
-            log.debug("Сохранен хит: uri={}, ip={}", uri, ip);
+            log.debug("Хит сохранён");
         } catch (Exception e) {
-            log.error("Ошибка при сохранении статистики: {}", e.getMessage());
+            log.error("Ошибка при сохранении статистики", e);
         }
     }
 
     @Override
     public Map<String, Long> getViewsMap(LocalDateTime start, LocalDateTime end, List<String> uris) {
         try {
+            log.info("Запрашиваем статистику за период {} - {}, uris: {}", start, end, uris);
             List<ViewStats> stats = statsClient.getStats(start, end, uris, false);
+            log.info("Получено записей: {}", stats.size());
             return StatsMapper.toViewsMap(stats);
         } catch (Exception e) {
-            log.error("Ошибка при получении статистики: {}", e.getMessage());
+            log.error("Ошибка при получении статистики", e);
             return Map.of();
         }
     }

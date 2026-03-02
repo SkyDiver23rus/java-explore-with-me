@@ -8,7 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.main.dto.EventFullDto;
 import ru.practicum.main.dto.EventShortDto;
+import ru.practicum.main.server.exception.NotFoundException;
 import ru.practicum.main.server.service.EventService;
 import ru.practicum.main.server.service.StatsService;
 
@@ -41,6 +43,21 @@ public class PublicEventController {
         List<EventShortDto> events = eventService.getPublishedEvents(
                 text, categories, paid, rangeStart, rangeEnd,
                 onlyAvailable, sort, from, size, request);
+        log.info("Public: найдено событий: {}", events.size());
         return ResponseEntity.ok(events != null ? events : Collections.emptyList());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<EventFullDto> getEvent(@PathVariable Long id, HttpServletRequest request) {
+        log.info("Public: запрос события с id={}", id);
+        try {
+            EventFullDto event = eventService.getPublishedEventById(id, request);
+            return ResponseEntity.ok(event);
+        } catch (NotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Ошибка при получении события: {}", e.getMessage(), e);
+            throw new NotFoundException("Событие с id=" + id + " не найдено");
+        }
     }
 }

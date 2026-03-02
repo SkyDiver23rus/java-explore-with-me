@@ -84,15 +84,18 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public EventFullDto getPublishedEventById(Long id, HttpServletRequest request) {
+        log.info("Получение события id={} для публичного просмотра", id);
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Событие с id=" + id + " не найдено"));
-
         if (event.getState() != Event.EventState.PUBLISHED) {
             throw new NotFoundException("Событие с id=" + id + " не найдено");
         }
+        log.info("Сохранение хита для события id={}, текущие просмотры={}", id, event.getViews());
         statsService.saveHit(request.getRequestURI(), request.getRemoteAddr());
+        // Увеличиваем счётчик просмотров в БД
         event.setViews(event.getViews() + 1);
         event = eventRepository.save(event);
+        log.info("После увеличения просмотры={}", event.getViews());
         return EventMapper.toFullDto(event, event.getViews());
     }
     //  МЕТОДЫ ДЛЯ АДМИНА
