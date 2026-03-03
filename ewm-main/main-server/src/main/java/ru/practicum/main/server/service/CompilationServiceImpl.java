@@ -43,23 +43,12 @@ public class CompilationServiceImpl implements CompilationService {
             compilations = compilationRepository.findAllByPinned(pinned, pageable).getContent();
         }
 
-        List<String> allUris = compilations.stream()
-                .flatMap(c -> c.getEvents().stream())
-                .map(e -> "/events/" + e.getId())
-                .distinct()
-                .collect(Collectors.toList());
-
-        Map<String, Long> viewsMap = allUris.isEmpty()
-                ? Collections.emptyMap()
-                : statsService.getViewsMap(LocalDateTime.now().minusYears(100), LocalDateTime.now(), allUris);
+        if (compilations.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         return compilations.stream()
-                .map(compilation -> {
-                    List<Long> views = compilation.getEvents().stream()
-                            .map(e -> viewsMap.getOrDefault("/events/" + e.getId(), 0L))
-                            .collect(Collectors.toList());
-                    return CompilationMapper.toDto(compilation, views);
-                })
+                .map(this::mapToDtoWithViews)
                 .collect(Collectors.toList());
     }
 
@@ -68,18 +57,7 @@ public class CompilationServiceImpl implements CompilationService {
         Compilation compilation = compilationRepository.findById(compId)
                 .orElseThrow(() -> new NotFoundException("Подборка с id=" + compId + " не найдена"));
 
-        List<String> uris = compilation.getEvents().stream()
-                .map(e -> "/events/" + e.getId())
-                .collect(Collectors.toList());
-
-        Map<String, Long> viewsMap = statsService.getViewsMap(
-                LocalDateTime.now().minusYears(100), LocalDateTime.now(), uris);
-
-        List<Long> views = compilation.getEvents().stream()
-                .map(e -> viewsMap.getOrDefault("/events/" + e.getId(), 0L))
-                .collect(Collectors.toList());
-
-        return CompilationMapper.toDto(compilation, views);
+        return mapToDtoWithViews(compilation);
     }
 
     @Override
@@ -93,7 +71,7 @@ public class CompilationServiceImpl implements CompilationService {
         compilation = compilationRepository.save(compilation);
         log.info("Создана подборка: id={}, title={}", compilation.getId(), compilation.getTitle());
 
-        return getCompilationById(compilation.getId());
+        return mapToDtoWithViews(compilation);
     }
 
     @Override
@@ -101,9 +79,11 @@ public class CompilationServiceImpl implements CompilationService {
     public CompilationDto updateCompilation(Long compId, UpdateCompilationRequest dto) {
         Compilation compilation = compilationRepository.findById(compId)
                 .orElseThrow(() -> new NotFoundException("Подборка с id=" + compId + " не найдена"));
+
         if (dto.getTitle() != null && dto.getTitle().length() > 50) {
             throw new BadRequestException("Заголовок не может быть длиннее 50 символов");
         }
+
         List<Event> events = dto.getEvents() == null
                 ? compilation.getEvents()
                 : eventRepository.findAllById(dto.getEvents());
@@ -112,7 +92,7 @@ public class CompilationServiceImpl implements CompilationService {
         compilation = compilationRepository.save(compilation);
         log.info("Обновлена подборка с id={}", compId);
 
-        return getCompilationById(compId);
+        return mapToDtoWithViews(compilation);
     }
 
     @Override
@@ -123,5 +103,36 @@ public class CompilationServiceImpl implements CompilationService {
         }
         compilationRepository.deleteById(compId);
         log.info("Удалена подборка с id={}", compId);
+    }
+
+    private CompilationDto mapToDtoWithViews(Compilation compilation) {
+        List<Event> events = compilation.getEvents();
+
+        if (events.isEmpty()) {
+            return CompilationMapper.toDto(compilation, Collections.emptyList());
+        }
+
+        List<String> uris = events.stream()
+                .map(e -> "/events/" + e.getId())
+                .collect(Collectors.toList());
+
+        LocalDateTime earliestEventDate = events.stream()
+                .map(Event::getCreatedOn)
+                .min(LocalDateTime::compareTo)
+                .orElse(LocalDateTime.now().minusYears(1));
+
+        // Запрашиваем статистику с даты самого раннего события
+        Map<String, Long> viewsMap = statsService.getViewsMap(
+                earliestEventDate,
+                LocalDateTime.now(),
+                uris
+        );
+
+        // просмотры для каждого события
+        List<Long> views = events.stream()
+                .map(e -> viewsMap.getOrDefault("/events/" + e.getId(), 0L))
+                .collect(Collectors.toList());
+
+        return CompilationMapper.toDto(compilation, views);
     }
 }
