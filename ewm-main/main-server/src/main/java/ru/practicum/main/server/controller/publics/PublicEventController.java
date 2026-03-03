@@ -3,14 +3,15 @@ package ru.practicum.main.server.controller.publics;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
-import org.springframework.validation.annotation.Validated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.main.server.dto.EventFullDto;
 import ru.practicum.main.server.dto.EventShortDto;
+import ru.practicum.main.server.exception.BadRequestException;
 import ru.practicum.main.server.exception.NotFoundException;
 import ru.practicum.main.server.service.EventService;
 import ru.practicum.main.server.service.StatsService;
@@ -41,6 +42,14 @@ public class PublicEventController {
             @RequestParam(defaultValue = "10") @Positive int size,
             HttpServletRequest request) {
 
+        // Валидация параметров в контроллере перенес из сервиса
+        if (size <= 0) {
+            throw new BadRequestException("size должен быть положительным");
+        }
+        if (from < 0) {
+            throw new BadRequestException("from не может быть отрицательным");
+        }
+
         log.info("Public: поиск событий с from={}, size={}", from, size);
 
         try {
@@ -53,7 +62,6 @@ public class PublicEventController {
                 text, categories, paid, rangeStart, rangeEnd,
                 onlyAvailable, sort, from, size, request);
 
-        log.info("Public: найдено событий: {}", events.size());
         return ResponseEntity.ok(events != null ? events : Collections.emptyList());
     }
 

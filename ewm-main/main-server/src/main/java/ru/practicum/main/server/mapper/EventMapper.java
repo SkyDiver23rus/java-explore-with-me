@@ -4,6 +4,7 @@ import ru.practicum.main.server.dto.*;
 import ru.practicum.main.server.model.Category;
 import ru.practicum.main.server.model.Event;
 import ru.practicum.main.server.model.Event.EventState;
+import ru.practicum.main.server.model.EventStateAction;
 import ru.practicum.main.server.model.User;
 
 import java.time.LocalDateTime;
@@ -24,7 +25,6 @@ public class EventMapper {
                 .title(dto.getTitle())
                 .state(EventState.PENDING)
                 .confirmedRequests(0L)
-                .views(0L)
                 .createdOn(LocalDateTime.now())
                 .build();
     }
@@ -47,7 +47,6 @@ public class EventMapper {
                 .title(dto.getTitle() != null ? dto.getTitle() : existingEvent.getTitle())
                 .state(existingEvent.getState())
                 .confirmedRequests(existingEvent.getConfirmedRequests())
-                .views(existingEvent.getViews())
                 .createdOn(existingEvent.getCreatedOn())
                 .publishedOn(existingEvent.getPublishedOn())
                 .build();
@@ -57,11 +56,12 @@ public class EventMapper {
         EventState newState = existingEvent.getState();
 
         if (dto.getStateAction() != null) {
-            switch (dto.getStateAction()) {
-                case "PUBLISH_EVENT":
+            EventStateAction action = EventStateAction.valueOf(dto.getStateAction());
+            switch (action) {
+                case PUBLISH_EVENT:
                     newState = EventState.PUBLISHED;
                     break;
-                case "REJECT_EVENT":
+                case REJECT_EVENT:
                     newState = EventState.CANCELED;
                     break;
             }
@@ -84,7 +84,6 @@ public class EventMapper {
                 .title(dto.getTitle() != null ? dto.getTitle() : existingEvent.getTitle())
                 .state(newState)
                 .confirmedRequests(existingEvent.getConfirmedRequests())
-                .views(existingEvent.getViews())
                 .createdOn(existingEvent.getCreatedOn())
                 .publishedOn(newState == EventState.PUBLISHED ? LocalDateTime.now() : existingEvent.getPublishedOn())
                 .build();
@@ -108,7 +107,7 @@ public class EventMapper {
                 .requestModeration(event.getRequestModeration())
                 .state(event.getState() != null ? event.getState().toString() : null)
                 .title(event.getTitle())
-                .views(views != null ? views : event.getViews())
+                .views(views != null ? views : 0L)
                 .build();
     }
 
@@ -122,7 +121,7 @@ public class EventMapper {
                 .initiator(UserMapper.toShortDto(event.getInitiator()))
                 .paid(event.getPaid())
                 .title(event.getTitle())
-                .views(views != null ? views : event.getViews())
+                .views(views != null ? views : 0L)
                 .build();
     }
 }

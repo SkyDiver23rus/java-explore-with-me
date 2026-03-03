@@ -66,9 +66,6 @@ public class Event {
     @Column(nullable = false, length = 120)
     private String title;
 
-    @Column(name = "views")
-    private Long views = 0L;
-
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
     private List<ParticipationRequest> requests = new ArrayList<>();
 
