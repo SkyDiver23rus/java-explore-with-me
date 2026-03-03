@@ -3,9 +3,11 @@ package ru.practicum.main.server.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import ru.practicum.stat.client.StatsClient;
 
+@Component
 @Configuration
 public class StatsClientConfig {
 

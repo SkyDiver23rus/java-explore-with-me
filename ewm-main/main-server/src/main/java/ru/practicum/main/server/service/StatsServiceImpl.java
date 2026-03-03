@@ -44,7 +44,7 @@ public class StatsServiceImpl implements StatsService {
     public Map<String, Long> getViewsMap(LocalDateTime start, LocalDateTime end, List<String> uris) {
         try {
             log.info("Запрашиваем статистику за период {} - {}, uris: {}", start, end, uris);
-            List<ViewStats> stats = statsClient.getStats(start, end, uris, false);
+            List<ViewStats> stats = statsClient.getStats(start, end, uris, true);
             log.info("Получено записей: {}", stats.size());
             return StatsMapper.toViewsMap(stats);
         } catch (Exception e) {
