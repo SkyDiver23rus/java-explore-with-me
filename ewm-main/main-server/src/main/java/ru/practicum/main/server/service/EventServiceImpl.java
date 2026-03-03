@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.main.dto.*;
+import ru.practicum.main.server.dto.*;
 import ru.practicum.main.server.exception.BadRequestException;
 import ru.practicum.main.server.exception.ConflictException;
 import ru.practicum.main.server.exception.NotFoundException;

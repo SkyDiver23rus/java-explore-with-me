@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.main.dto.ParticipationRequestDto;
+import ru.practicum.main.server.dto.ParticipationRequestDto;
 import ru.practicum.main.server.exception.ConflictException;
 import ru.practicum.main.server.exception.NotFoundException;
 import ru.practicum.main.server.mapper.ParticipationRequestMapper;

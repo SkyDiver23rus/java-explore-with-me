@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import ru.practicum.main.dto.ApiError;
+import ru.practicum.main.server.dto.ApiError;
 
 import java.time.LocalDateTime;
 import java.util.Collections;

@@ -1,6 +1,6 @@
 package ru.practicum.main.server.mapper;
 
-import ru.practicum.main.dto.Location;
+import ru.practicum.main.server.dto.Location;
 import ru.practicum.main.server.model.LocationEntity;
 
 public class LocationMapper {

@@ -1,8 +1,8 @@
 package ru.practicum.main.server.mapper;
 
-import ru.practicum.main.dto.NewUserRequest;
-import ru.practicum.main.dto.UserDto;
-import ru.practicum.main.dto.UserShortDto;
+import ru.practicum.main.server.dto.NewUserRequest;
+import ru.practicum.main.server.dto.UserDto;
+import ru.practicum.main.server.dto.UserShortDto;
 import ru.practicum.main.server.model.User;
 
 public class UserMapper {

@@ -8,8 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.main.dto.EventFullDto;
-import ru.practicum.main.dto.UpdateEventAdminRequest;
+import ru.practicum.main.server.dto.EventFullDto;
+import ru.practicum.main.server.dto.UpdateEventAdminRequest;
 import ru.practicum.main.server.model.Event;
 import ru.practicum.main.server.service.EventService;
 

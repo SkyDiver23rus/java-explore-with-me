@@ -1,4 +1,4 @@
-package ru.practicum.main.dto;
+package ru.practicum.main.server.dto;
 
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonFormat;

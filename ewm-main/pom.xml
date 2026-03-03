@@ -15,34 +15,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>main-dto</module>
-        <module>main-client</module>
         <module>main-server</module>
     </modules>
-
-    <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>ru.practicum</groupId>
-                <artifactId>main-dto</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ru.practicum</groupId>
-                <artifactId>main-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ru.practicum</groupId>
-                <artifactId>stats-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 </project>

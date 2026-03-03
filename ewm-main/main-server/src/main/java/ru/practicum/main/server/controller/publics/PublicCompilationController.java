@@ -3,7 +3,7 @@ package ru.practicum.main.server.controller.publics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.main.dto.CompilationDto;
+import ru.practicum.main.server.dto.CompilationDto;
 import ru.practicum.main.server.service.CompilationService;
 
 import jakarta.validation.constraints.Positive;

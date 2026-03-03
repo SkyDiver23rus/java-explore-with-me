@@ -1,7 +1,7 @@
 package ru.practicum.main.server.service;
 
 import jakarta.servlet.http.HttpServletRequest;
-import ru.practicum.main.dto.*;
+import ru.practicum.main.server.dto.*;
 import ru.practicum.main.server.model.Event;
 
 import java.time.LocalDateTime;

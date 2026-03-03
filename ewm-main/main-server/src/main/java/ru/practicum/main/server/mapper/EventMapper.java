@@ -1,6 +1,6 @@
 package ru.practicum.main.server.mapper;
 
-import ru.practicum.main.dto.*;
+import ru.practicum.main.server.dto.*;
 import ru.practicum.main.server.model.Category;
 import ru.practicum.main.server.model.Event;
 import ru.practicum.main.server.model.Event.EventState;

@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.main.dto.NewUserRequest;
-import ru.practicum.main.dto.UserDto;
+import ru.practicum.main.server.dto.NewUserRequest;
+import ru.practicum.main.server.dto.UserDto;
 import ru.practicum.main.server.service.UserService;
 
 import jakarta.validation.Valid;
