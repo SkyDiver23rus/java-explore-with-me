@@ -13,6 +13,7 @@ import ru.practicum.main.server.dto.EventFullDto;
 import ru.practicum.main.server.dto.EventShortDto;
 import ru.practicum.main.server.exception.BadRequestException;
 import ru.practicum.main.server.exception.NotFoundException;
+import ru.practicum.main.server.model.EventSort;
 import ru.practicum.main.server.service.EventService;
 import ru.practicum.main.server.service.StatsService;
 
@@ -37,12 +38,11 @@ public class PublicEventController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
             @RequestParam(defaultValue = "false") Boolean onlyAvailable,
-            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) EventSort sort,
             @RequestParam(defaultValue = "0") @PositiveOrZero int from,
             @RequestParam(defaultValue = "10") @Positive int size,
             HttpServletRequest request) {
 
-        // Валидация параметров в контроллере перенес из сервиса
         if (size <= 0) {
             throw new BadRequestException("size должен быть положительным");
         }

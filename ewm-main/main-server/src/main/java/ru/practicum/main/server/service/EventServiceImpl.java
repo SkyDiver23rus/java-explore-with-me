@@ -43,18 +43,16 @@ public class EventServiceImpl implements EventService {
     private static final LocalDateTime DEFAULT_END = LocalDateTime.now().plusYears(100);
 
     // паблик
-
     @Override
     public List<EventShortDto> getPublishedEvents(String text, List<Long> categories, Boolean paid,
                                                   LocalDateTime rangeStart, LocalDateTime rangeEnd,
-                                                  Boolean onlyAvailable, String sort,
+                                                  Boolean onlyAvailable, EventSort sort,
                                                   int from, int size, HttpServletRequest request) {
 
         log.info("getPublishedEvents: from={}, size={}", from, size);
 
         String safeText = text == null ? "" : text.trim();
 
-        // Ключевой фикс: для JPQL IN нельзя отдавать пустой список
         boolean categoriesEmpty = categories == null || categories.isEmpty();
         List<Long> safeCategories = categoriesEmpty ? List.of(-1L) : categories;
 
@@ -70,8 +68,13 @@ public class EventServiceImpl implements EventService {
             throw new BadRequestException("Дата начала не может быть позже даты окончания");
         }
 
-        Sort sortBy = Sort.by(Sort.Direction.DESC, "eventDate");
-        Pageable pageable = PageRequest.of(from / size, size, sortBy);
+        Pageable pageable;
+        if (sort == EventSort.VIEWS) {
+            pageable = PageRequest.of(from / size, size);
+        } else {
+            Sort sortBy = Sort.by(Sort.Direction.ASC, "eventDate");
+            pageable = PageRequest.of(from / size, size, sortBy);
+        }
 
         List<Event> events = eventRepository.findPublishedEvents(
                 safeText,
@@ -113,7 +116,7 @@ public class EventServiceImpl implements EventService {
                         finalViewsMap.getOrDefault("/events/" + event.getId(), 0L)))
                 .collect(Collectors.toList());
 
-        if ("VIEWS".equals(sort)) {
+        if (sort == EventSort.VIEWS) {
             result.sort((a, b) -> Long.compare(b.getViews(), a.getViews()));
             log.info("Отсортировано по просмотрам (убывание)");
         }
@@ -155,7 +158,6 @@ public class EventServiceImpl implements EventService {
     }
 
     // админ
-
     @Override
     public List<EventFullDto> searchEventsByAdmin(List<Long> users, List<Event.EventState> states,
                                                   List<Long> categories, LocalDateTime rangeStart,
@@ -274,7 +276,6 @@ public class EventServiceImpl implements EventService {
     }
 
     // пользователь
-
     @Override
     public List<EventShortDto> getUserEvents(Long userId, int from, int size) {
         if (!userRepository.existsById(userId)) {

@@ -3,6 +3,7 @@ package ru.practicum.main.server.service;
 import jakarta.servlet.http.HttpServletRequest;
 import ru.practicum.main.server.dto.*;
 import ru.practicum.main.server.model.Event;
+import ru.practicum.main.server.model.EventSort;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,7 +12,7 @@ public interface EventService {
     // Публичные методы
     List<EventShortDto> getPublishedEvents(String text, List<Long> categories, Boolean paid,
                                            LocalDateTime rangeStart, LocalDateTime rangeEnd,
-                                           Boolean onlyAvailable, String sort,
+                                           Boolean onlyAvailable, EventSort sort,
                                            int from, int size, HttpServletRequest request);
 
     EventFullDto getPublishedEventById(Long id, HttpServletRequest request);
