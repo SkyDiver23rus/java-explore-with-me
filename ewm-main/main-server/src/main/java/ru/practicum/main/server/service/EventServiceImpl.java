@@ -39,7 +39,6 @@ public class EventServiceImpl implements EventService {
     private final ParticipationRequestRepository requestRepository;
     private final StatsService statsService;
 
-    private static final LocalDateTime DEFAULT_START = LocalDateTime.now().minusYears(100);
     private static final LocalDateTime DEFAULT_END = LocalDateTime.now().plusYears(100);
 
     // паблик
@@ -104,9 +103,18 @@ public class EventServiceImpl implements EventService {
                 .map(e -> "/events/" + e.getId())
                 .collect(Collectors.toList());
 
+        // минимльная дата
+        LocalDateTime earliestEventDate = events.stream()
+                .map(Event::getCreatedOn)
+                .min(LocalDateTime::compareTo)
+                .orElse(rangeStart);
+
         Map<String, Long> viewsMap;
         try {
-            viewsMap = statsService.getViewsMap(DEFAULT_START, DEFAULT_END, uris);
+            viewsMap = statsService.getViewsMap(
+                    earliestEventDate,
+                    LocalDateTime.now(),
+                    uris);
             log.info("Загружено просмотров для {} событий", events.size());
         } catch (Exception e) {
             log.error("Ошибка при получении статистики: {}", e.getMessage());
@@ -154,8 +162,11 @@ public class EventServiceImpl implements EventService {
 
         Long views = 0L;
         try {
+            // дата события для запроса статистики
             Map<String, Long> viewsMap = statsService.getUniqueViewsMap(
-                    DEFAULT_START, DEFAULT_END, List.of("/events/" + id));
+                    event.getCreatedOn(),
+                    LocalDateTime.now(),
+                    List.of("/events/" + id));
             views = viewsMap.getOrDefault("/events/" + id, 0L);
             log.info("Просмотры для события id={}: {}", id, views);
         } catch (Exception e) {
@@ -173,7 +184,7 @@ public class EventServiceImpl implements EventService {
                                                   List<Long> categories, LocalDateTime rangeStart,
                                                   LocalDateTime rangeEnd, int from, int size) {
 
-        if (rangeStart == null) rangeStart = DEFAULT_START;
+        if (rangeStart == null) rangeStart = LocalDateTime.now().minusYears(100);
         if (rangeEnd == null) rangeEnd = DEFAULT_END;
         if (size <= 0) size = 10;
         if (from < 0) from = 0;
@@ -191,9 +202,18 @@ public class EventServiceImpl implements EventService {
                 .map(e -> "/events/" + e.getId())
                 .collect(Collectors.toList());
 
+        // минимальная дату создания события
+        LocalDateTime earliestEventDate = events.stream()
+                .map(Event::getCreatedOn)
+                .min(LocalDateTime::compareTo)
+                .orElse(rangeStart);
+
         Map<String, Long> viewsMap;
         try {
-            viewsMap = statsService.getViewsMap(DEFAULT_START, DEFAULT_END, uris);
+            viewsMap = statsService.getViewsMap(
+                    earliestEventDate,
+                    LocalDateTime.now(),
+                    uris);
         } catch (Exception e) {
             log.error("Ошибка при получении статистики: {}", e.getMessage());
             viewsMap = Collections.emptyMap();
@@ -247,8 +267,11 @@ public class EventServiceImpl implements EventService {
 
         Long views = 0L;
         try {
+            // дата создания события
             Map<String, Long> viewsMap = statsService.getViewsMap(
-                    DEFAULT_START, DEFAULT_END, List.of("/events/" + eventId));
+                    event.getCreatedOn(),
+                    LocalDateTime.now(),
+                    List.of("/events/" + eventId));
             views = viewsMap.getOrDefault("/events/" + eventId, 0L);
         } catch (Exception e) {
             log.error("Ошибка при получении статистики: {}", e.getMessage());
@@ -306,9 +329,18 @@ public class EventServiceImpl implements EventService {
                 .map(e -> "/events/" + e.getId())
                 .collect(Collectors.toList());
 
+        // минимальная дату создания события
+        LocalDateTime earliestEventDate = events.stream()
+                .map(Event::getCreatedOn)
+                .min(LocalDateTime::compareTo)
+                .orElse(LocalDateTime.now().minusYears(1));
+
         Map<String, Long> viewsMap;
         try {
-            viewsMap = statsService.getViewsMap(DEFAULT_START, DEFAULT_END, uris);
+            viewsMap = statsService.getViewsMap(
+                    earliestEventDate,
+                    LocalDateTime.now(),
+                    uris);
         } catch (Exception e) {
             log.error("Ошибка при получении статистики: {}", e.getMessage());
             viewsMap = Collections.emptyMap();
@@ -359,8 +391,11 @@ public class EventServiceImpl implements EventService {
 
         Long views = 0L;
         try {
+            // дата создания события
             Map<String, Long> viewsMap = statsService.getViewsMap(
-                    DEFAULT_START, DEFAULT_END, List.of("/events/" + eventId));
+                    event.getCreatedOn(),
+                    LocalDateTime.now(),
+                    List.of("/events/" + eventId));
             views = viewsMap.getOrDefault("/events/" + eventId, 0L);
         } catch (Exception e) {
             log.error("Ошибка при получении статистики: {}", e.getMessage());
@@ -430,8 +465,11 @@ public class EventServiceImpl implements EventService {
 
         Long views = 0L;
         try {
+            // дата создания события
             Map<String, Long> viewsMap = statsService.getViewsMap(
-                    DEFAULT_START, DEFAULT_END, List.of("/events/" + eventId));
+                    event.getCreatedOn(),
+                    LocalDateTime.now(),
+                    List.of("/events/" + eventId));
             views = viewsMap.getOrDefault("/events/" + eventId, 0L);
         } catch (Exception e) {
             log.error("Ошибка при получении статистики: {}", e.getMessage());
