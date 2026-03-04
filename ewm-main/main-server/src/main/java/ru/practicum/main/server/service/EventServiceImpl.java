@@ -49,12 +49,16 @@ public class EventServiceImpl implements EventService {
                                                   Boolean onlyAvailable, EventSort sort,
                                                   int from, int size, HttpServletRequest request) {
 
-        log.info("getPublishedEvents: from={}, size={}", from, size);
+        log.info("========== getPublishedEvents START ==========");
+        log.info("from={}, size={}", from, size);
+        log.info("text={}, categories={}, paid={}", text, categories, paid);
+        log.info("rangeStart={}, rangeEnd={}", rangeStart, rangeEnd);
+        log.info("onlyAvailable={}, sort={}", onlyAvailable, sort);
 
         String safeText = text == null ? "" : text.trim();
 
         boolean categoriesEmpty = categories == null || categories.isEmpty();
-        List<Long> safeCategories = categoriesEmpty ? List.of(-1L) : categories;
+        List<Long> safeCategories = categoriesEmpty ? Collections.emptyList() : categories;
 
         boolean safeOnlyAvailable = Boolean.TRUE.equals(onlyAvailable);
 
@@ -89,7 +93,10 @@ public class EventServiceImpl implements EventService {
                 pageable
         );
 
+        log.info("Найдено событий в БД: {}", events.size());
+
         if (events.isEmpty()) {
+            log.info("Событий нет, возвращаем пустой список");
             return Collections.emptyList();
         }
 
@@ -107,6 +114,7 @@ public class EventServiceImpl implements EventService {
         }
 
         Map<Long, Long> confirmedMap = getConfirmedRequestsMap(events);
+        log.info("Загружено подтверждённых запросов для {} событий", confirmedMap.size());
 
         Map<String, Long> finalViewsMap = viewsMap;
         List<EventShortDto> result = events.stream()
@@ -121,6 +129,8 @@ public class EventServiceImpl implements EventService {
             log.info("Отсортировано по просмотрам (убывание)");
         }
 
+        log.info("Возвращаем {} событий", result.size());
+        log.info("========== getPublishedEvents END ==========");
         return result;
     }
 
@@ -144,7 +154,7 @@ public class EventServiceImpl implements EventService {
 
         Long views = 0L;
         try {
-            Map<String, Long> viewsMap = statsService.getViewsMap(
+            Map<String, Long> viewsMap = statsService.getUniqueViewsMap(
                     DEFAULT_START, DEFAULT_END, List.of("/events/" + id));
             views = viewsMap.getOrDefault("/events/" + id, 0L);
             log.info("Просмотры для события id={}: {}", id, views);
@@ -513,9 +523,14 @@ public class EventServiceImpl implements EventService {
     }
 
     private long getConfirmedRequestsCount(Long eventId) {
-        Long count = requestRepository.countByEventIdAndStatus(
-                eventId, ParticipationRequest.RequestStatus.CONFIRMED);
-        return count != null ? count : 0L;
+        try {
+            Long count = requestRepository.countByEventIdAndStatus(
+                    eventId, ParticipationRequest.RequestStatus.CONFIRMED);
+            return count != null ? count : 0L;
+        } catch (Exception e) {
+            log.error("Ошибка при получении confirmedRequests для события {}: {}", eventId, e.getMessage());
+            return 0L;
+        }
     }
 
     private Map<Long, Long> getConfirmedRequestsMap(List<Event> events) {
@@ -523,18 +538,23 @@ public class EventServiceImpl implements EventService {
             return Collections.emptyMap();
         }
 
-        List<Long> eventIds = events.stream()
-                .map(Event::getId)
-                .collect(Collectors.toList());
+        try {
+            List<Long> eventIds = events.stream()
+                    .map(Event::getId)
+                    .collect(Collectors.toList());
 
-        List<ParticipationRequestRepository.EventConfirmedCount> counts =
-                requestRepository.countConfirmedRequestsByEventIds(
-                        eventIds, ParticipationRequest.RequestStatus.CONFIRMED);
+            List<ParticipationRequestRepository.EventConfirmedCount> counts =
+                    requestRepository.countConfirmedRequestsByEventIds(
+                            eventIds, ParticipationRequest.RequestStatus.CONFIRMED);
 
-        Map<Long, Long> result = new HashMap<>();
-        for (ParticipationRequestRepository.EventConfirmedCount c : counts) {
-            result.put(c.getEventId(), c.getConfirmedRequests());
+            Map<Long, Long> result = new HashMap<>();
+            for (ParticipationRequestRepository.EventConfirmedCount c : counts) {
+                result.put(c.getEventId(), c.getConfirmedRequests());
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("Ошибка при получении карты confirmedRequests: {}", e.getMessage());
+            return Collections.emptyMap();
         }
-        return result;
     }
 }
