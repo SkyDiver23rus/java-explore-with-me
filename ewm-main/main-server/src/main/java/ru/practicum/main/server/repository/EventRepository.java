@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ru.practicum.main.server.model.Event;
 import ru.practicum.main.server.model.Event.EventState;
+import ru.practicum.main.server.model.ParticipationRequest.RequestStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,7 +38,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND (e.eventDate BETWEEN :rangeStart AND :rangeEnd) " +
             "AND (:onlyAvailable = false OR e.participantLimit = 0 OR " +
             "(SELECT count(pr.id) FROM ParticipationRequest pr " +
-            " WHERE pr.event.id = e.id AND pr.status = 'CONFIRMED') < e.participantLimit)")
+            " WHERE pr.event.id = e.id AND pr.status = :confirmedStatus) < e.participantLimit)")
     List<Event> findPublishedEvents(@Param("text") String text,
                                     @Param("categories") List<Long> categories,
                                     @Param("categoriesEmpty") boolean categoriesEmpty,
@@ -45,5 +46,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                     @Param("rangeStart") LocalDateTime rangeStart,
                                     @Param("rangeEnd") LocalDateTime rangeEnd,
                                     @Param("onlyAvailable") boolean onlyAvailable,
+                                    @Param("confirmedStatus") RequestStatus confirmedStatus,
                                     Pageable pageable);
 }

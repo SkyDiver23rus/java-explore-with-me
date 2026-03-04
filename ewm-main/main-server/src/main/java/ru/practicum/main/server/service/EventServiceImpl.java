@@ -52,9 +52,19 @@ public class EventServiceImpl implements EventService {
 
         log.info("getPublishedEvents: from={}, size={}", from, size);
 
+        if (size <= 0) {
+            size = 10;
+        }
+        if (from < 0) {
+            from = 0;
+        }
+
         String safeText = text == null ? "" : text.trim();
-        List<Long> safeCategories = categories == null ? Collections.emptyList() : categories;
-        boolean categoriesEmpty = safeCategories.isEmpty();
+
+        // Важно для JPQL IN :categories — нельзя передавать пустой список, иначе возможен 500
+        boolean categoriesEmpty = categories == null || categories.isEmpty();
+        List<Long> safeCategories = categoriesEmpty ? List.of(-1L) : categories;
+
         boolean safeOnlyAvailable = Boolean.TRUE.equals(onlyAvailable);
 
         if (rangeStart == null) {
@@ -78,6 +88,7 @@ public class EventServiceImpl implements EventService {
                 rangeStart,
                 rangeEnd,
                 safeOnlyAvailable,
+                ParticipationRequest.RequestStatus.CONFIRMED,
                 pageable
         );
 
@@ -159,6 +170,7 @@ public class EventServiceImpl implements EventService {
         if (rangeStart == null) rangeStart = DEFAULT_START;
         if (rangeEnd == null) rangeEnd = DEFAULT_END;
         if (size <= 0) size = 10;
+        if (from < 0) from = 0;
 
         Pageable pageable = PageRequest.of(from / size, size);
 
@@ -267,7 +279,7 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    //пользователь
+    // пользователь
 
     @Override
     public List<EventShortDto> getUserEvents(Long userId, int from, int size) {
@@ -276,6 +288,8 @@ public class EventServiceImpl implements EventService {
         }
 
         if (size <= 0) size = 10;
+        if (from < 0) from = 0;
+
         Pageable pageable = PageRequest.of(from / size, size);
         List<Event> events = eventRepository.findAllByInitiatorId(userId, pageable).getContent();
 
