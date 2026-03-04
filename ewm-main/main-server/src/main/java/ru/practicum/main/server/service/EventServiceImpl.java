@@ -52,16 +52,9 @@ public class EventServiceImpl implements EventService {
 
         log.info("getPublishedEvents: from={}, size={}", from, size);
 
-        if (size <= 0) {
-            size = 10;
-        }
-        if (from < 0) {
-            from = 0;
-        }
-
         String safeText = text == null ? "" : text.trim();
 
-        // Важно для JPQL IN :categories — нельзя передавать пустой список, иначе возможен 500
+        // Ключевой фикс: для JPQL IN нельзя отдавать пустой список
         boolean categoriesEmpty = categories == null || categories.isEmpty();
         List<Long> safeCategories = categoriesEmpty ? List.of(-1L) : categories;
 
@@ -88,6 +81,7 @@ public class EventServiceImpl implements EventService {
                 rangeStart,
                 rangeEnd,
                 safeOnlyAvailable,
+                Event.EventState.PUBLISHED,
                 ParticipationRequest.RequestStatus.CONFIRMED,
                 pageable
         );
