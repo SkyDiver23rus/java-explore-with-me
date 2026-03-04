@@ -14,11 +14,14 @@ import ru.practicum.main.server.exception.NotFoundException;
 import ru.practicum.main.server.mapper.CompilationMapper;
 import ru.practicum.main.server.model.Compilation;
 import ru.practicum.main.server.model.Event;
+import ru.practicum.main.server.model.ParticipationRequest;
 import ru.practicum.main.server.repository.CompilationRepository;
 import ru.practicum.main.server.repository.EventRepository;
+import ru.practicum.main.server.repository.ParticipationRequestRepository;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,6 +34,7 @@ public class CompilationServiceImpl implements CompilationService {
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
     private final StatsService statsService;
+    private final ParticipationRequestRepository requestRepository; // Добавлено!
 
     @Override
     public List<CompilationDto> getCompilations(Boolean pinned, int from, int size) {
@@ -109,30 +113,55 @@ public class CompilationServiceImpl implements CompilationService {
         List<Event> events = compilation.getEvents();
 
         if (events.isEmpty()) {
-            return CompilationMapper.toDto(compilation, Collections.emptyList());
+            return CompilationMapper.toDto(compilation, Collections.emptyList(), Collections.emptyList());
         }
 
+        // Собираем все uri событий
         List<String> uris = events.stream()
                 .map(e -> "/events/" + e.getId())
                 .collect(Collectors.toList());
 
+        // Вычисляем минимальную дату создания события
         LocalDateTime earliestEventDate = events.stream()
                 .map(Event::getCreatedOn)
                 .min(LocalDateTime::compareTo)
                 .orElse(LocalDateTime.now().minusYears(1));
 
-        // Запрашиваем статистику с даты самого раннего события
+        // Запрашиваем просмотры
         Map<String, Long> viewsMap = statsService.getViewsMap(
                 earliestEventDate,
                 LocalDateTime.now(),
                 uris
         );
 
-        // просмотры для каждого события
+        // Получаем подтверждённые запросы для всех событий одним запросом
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
+                .collect(Collectors.toList());
+
+        Map<Long, Long> confirmedMap = new HashMap<>();
+        try {
+            List<ParticipationRequestRepository.EventConfirmedCount> counts =
+                    requestRepository.countConfirmedRequestsByEventIds(
+                            eventIds, ParticipationRequest.RequestStatus.CONFIRMED);
+
+            for (ParticipationRequestRepository.EventConfirmedCount c : counts) {
+                confirmedMap.put(c.getEventId(), c.getConfirmedRequests());
+            }
+        } catch (Exception e) {
+            log.error("Ошибка получения confirmedRequests: {}", e.getMessage());
+        }
+
+        // Собираем просмотры для каждого события
         List<Long> views = events.stream()
                 .map(e -> viewsMap.getOrDefault("/events/" + e.getId(), 0L))
                 .collect(Collectors.toList());
 
-        return CompilationMapper.toDto(compilation, views);
+        // Собираем confirmedRequests для каждого события
+        List<Long> confirmedRequests = events.stream()
+                .map(e -> confirmedMap.getOrDefault(e.getId(), 0L))
+                .collect(Collectors.toList());
+
+        return CompilationMapper.toDto(compilation, views, confirmedRequests);
     }
 }

@@ -30,7 +30,7 @@ public class CompilationMapper {
                 .build();
     }
 
-    public static CompilationDto toDto(Compilation compilation, List<Long> views) {
+    public static CompilationDto toDto(Compilation compilation, List<Long> views, List<Long> confirmedRequests) {
         List<Event> events = compilation.getEvents();
 
         return CompilationDto.builder()
