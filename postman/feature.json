@@ -67,10 +67,10 @@
           "\"        body: {\",",
           "\"          mode: 'raw',\",",
           "\"          raw: JSON.stringify({\",",
-          "\"            annotation: 'Test annotation',\",",
+          "\"            annotation: 'Тестовая аннотация длиной больше двадцати символов',\",",
           "\"            category: categoryId,\",",
-          "\"            description: 'Test description',\",",
-          "\"            eventDate: '2026-12-31 15:00:00',\",",
+          "\"            description: 'Тестовое описание события, которое гарантированно длиннее двадцати символов',\",",
+          "\"            eventDate: '2030-12-31 15:00:00',\",",
           "\"            location: { lat: 55.7558, lon: 37.6176 },\",",
           "\"            paid: false,\",",
           "\"            participantLimit: 100,\",",
@@ -254,7 +254,7 @@
                   "    const c = await api.createComment(f.user.id, f.event.id, 'Исходный комментарий');",
                   "    pm.variables.set('userId', f.user.id);",
                   "    pm.variables.set('commentId', c.id);",
-                  "    pm.variables.set('updatedContent', 'Обновлённый текст');",
+                  "    pm.variables.set('updatedContent', 'Обновлённый текст комментария');",
                   "  } catch (e) {",
                   "    throw new Error('Setup 2.1 failed: ' + e.message);",
                   "  }",
@@ -310,7 +310,6 @@
                   "    const ev = await api.createEvent(owner.id, cat.id);",
                   "    await api.publishEvent(ev.id);",
                   "    const c = await api.createComment(owner.id, ev.id, 'Комментарий владельца');",
-                  "",
                   "    pm.variables.set('userId', other.id);",
                   "    pm.variables.set('commentId', c.id);",
                   "    pm.variables.set('updatedContent', 'Попытка изменить чужой комментарий');",
@@ -621,7 +620,8 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8080"
+      "value": "http://localhost:8080",
+      "type": "string"
     }
   ]
 }
