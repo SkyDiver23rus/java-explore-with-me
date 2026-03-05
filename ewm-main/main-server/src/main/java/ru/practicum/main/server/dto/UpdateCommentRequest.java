@@ -11,5 +11,5 @@ import lombok.*;
 public class UpdateCommentRequest {
 
     @Size(min = 1, max = 350, message = "Комментарий должен содержать от 1 до 350 символов")
-    private String text;
+    private String content;
 }

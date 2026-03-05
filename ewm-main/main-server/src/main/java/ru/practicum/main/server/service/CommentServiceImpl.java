@@ -49,7 +49,7 @@ public class CommentServiceImpl implements CommentService {
         }
 
         Comment comment = Comment.builder()
-                .text(dto.getText())
+                .content (dto.getContent ())
                 .author(author)
                 .event(event)
                 .createdOn(LocalDateTime.now())
@@ -78,7 +78,7 @@ public class CommentServiceImpl implements CommentService {
             throw new ConflictException("Нельзя редактировать удалённый комментарий");
         }
 
-        comment.setText(dto.getText());
+        comment.setContent (dto.getContent());
         comment.setUpdatedOn(LocalDateTime.now());
 
         comment = commentRepository.save(comment);
