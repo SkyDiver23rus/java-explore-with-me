@@ -11,108 +11,114 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "const BASE_URL = pm.collectionVariables.get('baseUrl') || pm.variables.get('baseUrl');",
+          "const factoryLines = [",
+          "\"(() => {\",",
+          "\"  const BASE_URL = pm.collectionVariables.get('baseUrl') || pm.variables.get('baseUrl');\",",
+          "\"\",",
+          "\"  function req(options) {\",",
+          "\"    return new Promise((resolve, reject) => {\",",
+          "\"      pm.sendRequest(options, (err, res) => err ? reject(err) : resolve(res));\",",
+          "\"    });\",",
+          "\"  }\",",
+          "\"\",",
+          "\"  function uniq(prefix) {\",",
+          "\"    prefix = prefix || 'test';\",",
+          "\"    return prefix + '-' + Date.now() + '-' + Math.floor(Math.random() * 10000);\",",
+          "\"  }\",",
+          "\"\",",
+          "\"  function assertStatus(res, expected, msg) {\",",
+          "\"    pm.expect(res.code, msg || ('Expected ' + expected + ', got ' + res.code)).to.eql(expected);\",",
+          "\"  }\",",
+          "\"\",",
+          "\"  class API {\",",
+          "\"    constructor(baseUrl) { this.baseUrl = baseUrl; }\",",
+          "\"\",",
+          "\"    async createUser(name, email) {\",",
+          "\"      name = name || uniq('user');\",",
+          "\"      email = email || (uniq('user') + '@test.com');\",",
+          "\"      const res = await req({\",",
+          "\"        url: this.baseUrl + '/admin/users',\",",
+          "\"        method: 'POST',\",",
+          "\"        header: { 'Content-Type': 'application/json' },\",",
+          "\"        body: { mode: 'raw', raw: JSON.stringify({ name: name, email: email }) }\",",
+          "\"      });\",",
+          "\"      assertStatus(res, 201, 'createUser failed');\",",
+          "\"      return res.json();\",",
+          "\"    }\",",
+          "\"\",",
+          "\"    async createCategory(name) {\",",
+          "\"      name = name || uniq('cat');\",",
+          "\"      const res = await req({\",",
+          "\"        url: this.baseUrl + '/admin/categories',\",",
+          "\"        method: 'POST',\",",
+          "\"        header: { 'Content-Type': 'application/json' },\",",
+          "\"        body: { mode: 'raw', raw: JSON.stringify({ name: name }) }\",",
+          "\"      });\",",
+          "\"      assertStatus(res, 201, 'createCategory failed');\",",
+          "\"      return res.json();\",",
+          "\"    }\",",
+          "\"\",",
+          "\"    async createEvent(ownerId, categoryId, title) {\",",
+          "\"      title = title || uniq('event');\",",
+          "\"      const res = await req({\",",
+          "\"        url: this.baseUrl + '/users/' + ownerId + '/events',\",",
+          "\"        method: 'POST',\",",
+          "\"        header: { 'Content-Type': 'application/json' },\",",
+          "\"        body: {\",",
+          "\"          mode: 'raw',\",",
+          "\"          raw: JSON.stringify({\",",
+          "\"            annotation: 'Test annotation',\",",
+          "\"            category: categoryId,\",",
+          "\"            description: 'Test description',\",",
+          "\"            eventDate: '2026-12-31 15:00:00',\",",
+          "\"            location: { lat: 55.7558, lon: 37.6176 },\",",
+          "\"            paid: false,\",",
+          "\"            participantLimit: 100,\",",
+          "\"            requestModeration: true,\",",
+          "\"            title: title\",",
+          "\"          })\",",
+          "\"        }\",",
+          "\"      });\",",
+          "\"      assertStatus(res, 201, 'createEvent failed');\",",
+          "\"      return res.json();\",",
+          "\"    }\",",
+          "\"\",",
+          "\"    async publishEvent(eventId) {\",",
+          "\"      const res = await req({\",",
+          "\"        url: this.baseUrl + '/admin/events/' + eventId,\",",
+          "\"        method: 'PATCH',\",",
+          "\"        header: { 'Content-Type': 'application/json' },\",",
+          "\"        body: { mode: 'raw', raw: JSON.stringify({ stateAction: 'PUBLISH_EVENT' }) }\",",
+          "\"      });\",",
+          "\"      assertStatus(res, 200, 'publishEvent failed');\",",
+          "\"      return res.json();\",",
+          "\"    }\",",
+          "\"\",",
+          "\"    async createComment(userId, eventId, content) {\",",
+          "\"      const res = await req({\",",
+          "\"        url: this.baseUrl + '/users/' + userId + '/comments?eventId=' + eventId,\",",
+          "\"        method: 'POST',\",",
+          "\"        header: { 'Content-Type': 'application/json' },\",",
+          "\"        body: { mode: 'raw', raw: JSON.stringify({ content: content }) }\",",
+          "\"      });\",",
+          "\"      assertStatus(res, 201, 'createComment failed');\",",
+          "\"      return res.json();\",",
+          "\"    }\",",
+          "\"\",",
+          "\"    async createPublishedEventFixture() {\",",
+          "\"      const user = await this.createUser();\",",
+          "\"      const category = await this.createCategory();\",",
+          "\"      const event = await this.createEvent(user.id, category.id);\",",
+          "\"      await this.publishEvent(event.id);\",",
+          "\"      return { user: user, category: category, event: event };\",",
+          "\"    }\",",
+          "\"  }\",",
+          "\"\",",
+          "\"  return new API(BASE_URL);\",",
+          "\"})()\"",
+          "];",
           "",
-          "function req(options) {",
-          "  return new Promise((resolve, reject) => {",
-          "    pm.sendRequest(options, (err, res) => {",
-          "      if (err) return reject(err);",
-          "      resolve(res);",
-          "    });",
-          "  });",
-          "}",
-          "",
-          "function uniq(prefix = 'test') {",
-          "  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;",
-          "}",
-          "",
-          "function assertStatus(res, expected, msg) {",
-          "  pm.expect(res.code, msg || `Expected ${expected}, got ${res.code}`).to.eql(expected);",
-          "}",
-          "",
-          "class API {",
-          "  constructor(baseUrl) {",
-          "    this.baseUrl = baseUrl;",
-          "  }",
-          "",
-          "  async createUser(name = uniq('user'), email = `${uniq('user')}@test.com`) {",
-          "    const res = await req({",
-          "      url: `${this.baseUrl}/admin/users`,",
-          "      method: 'POST',",
-          "      header: { 'Content-Type': 'application/json' },",
-          "      body: { mode: 'raw', raw: JSON.stringify({ name, email }) }",
-          "    });",
-          "    assertStatus(res, 201, 'createUser failed');",
-          "    return res.json();",
-          "  }",
-          "",
-          "  async createCategory(name = uniq('cat')) {",
-          "    const res = await req({",
-          "      url: `${this.baseUrl}/admin/categories`,",
-          "      method: 'POST',",
-          "      header: { 'Content-Type': 'application/json' },",
-          "      body: { mode: 'raw', raw: JSON.stringify({ name }) }",
-          "    });",
-          "    assertStatus(res, 201, 'createCategory failed');",
-          "    return res.json();",
-          "  }",
-          "",
-          "  async createEvent(ownerId, categoryId, title = uniq('event')) {",
-          "    const res = await req({",
-          "      url: `${this.baseUrl}/users/${ownerId}/events`,",
-          "      method: 'POST',",
-          "      header: { 'Content-Type': 'application/json' },",
-          "      body: {",
-          "        mode: 'raw',",
-          "        raw: JSON.stringify({",
-          "          annotation: 'Test annotation',",
-          "          category: categoryId,",
-          "          description: 'Test description',",
-          "          eventDate: '2026-12-31 15:00:00',",
-          "          location: { lat: 55.7558, lon: 37.6176 },",
-          "          paid: false,",
-          "          participantLimit: 100,",
-          "          requestModeration: true,",
-          "          title",
-          "        })",
-          "      }",
-          "    });",
-          "    assertStatus(res, 201, 'createEvent failed');",
-          "    return res.json();",
-          "  }",
-          "",
-          "  async publishEvent(eventId) {",
-          "    const res = await req({",
-          "      url: `${this.baseUrl}/admin/events/${eventId}`,",
-          "      method: 'PATCH',",
-          "      header: { 'Content-Type': 'application/json' },",
-          "      body: { mode: 'raw', raw: JSON.stringify({ stateAction: 'PUBLISH_EVENT' }) }",
-          "    });",
-          "    assertStatus(res, 200, 'publishEvent failed');",
-          "    return res.json();",
-          "  }",
-          "",
-          "  async createComment(userId, eventId, content) {",
-          "    const res = await req({",
-          "      url: `${this.baseUrl}/users/${userId}/comments?eventId=${eventId}`,",
-          "      method: 'POST',",
-          "      header: { 'Content-Type': 'application/json' },",
-          "      body: { mode: 'raw', raw: JSON.stringify({ content }) }",
-          "    });",
-          "    assertStatus(res, 201, 'createComment failed');",
-          "    return res.json();",
-          "  }",
-          "",
-          "  async createPublishedEventFixture() {",
-          "    const user = await this.createUser();",
-          "    const category = await this.createCategory();",
-          "    const event = await this.createEvent(user.id, category.id);",
-          "    await this.publishEvent(event.id);",
-          "    return { user, category, event };",
-          "  }",
-          "}",
-          "",
-          "globalThis.api = new API(BASE_URL);"
+          "pm.collectionVariables.set('__api_factory__', factoryLines.join('\\n'));"
         ]
       }
     }
@@ -129,6 +135,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api_factory__'));",
                   "(async () => {",
                   "  try {",
                   "    const f = await api.createPublishedEventFixture();",
@@ -149,7 +156,7 @@
                 "exec": [
                   "pm.test('201 Created', () => pm.response.to.have.status(201));",
                   "const json = pm.response.json();",
-                  "pm.test('Есть обязательные поля', () => {",
+                  "pm.test('Поля комментария присутствуют', () => {",
                   "  pm.expect(json).to.have.property('id');",
                   "  pm.expect(json).to.have.property('content', pm.variables.get('commentContent'));",
                   "  pm.expect(json).to.have.property('author');",
@@ -163,27 +170,30 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"content\": \"{{commentContent}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}/comments?eventId={{eventId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "comments"],
-              "query": [{ "key": "eventId", "value": "{{eventId}}" }]
+              "raw": "{{baseUrl}}/users/{{userId}}/comments?eventId={{eventId}}"
             }
           }
         },
         {
-          "name": "1.2 Текст 351 символ (ошибка 400)",
+          "name": "1.2 Слишком длинный текст (400)",
           "event": [
             {
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api_factory__'));",
                   "(async () => {",
                   "  try {",
                   "    const f = await api.createPublishedEventFixture();",
@@ -209,16 +219,18 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"content\": \"{{commentContent}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}/comments?eventId={{eventId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "comments"],
-              "query": [{ "key": "eventId", "value": "{{eventId}}" }]
+              "raw": "{{baseUrl}}/users/{{userId}}/comments?eventId={{eventId}}"
             }
           }
         }
@@ -235,6 +247,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api_factory__'));",
                   "(async () => {",
                   "  try {",
                   "    const f = await api.createPublishedEventFixture();",
@@ -256,7 +269,7 @@
                 "exec": [
                   "pm.test('200 OK', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
-                  "pm.test('Текст обновлён', () => {",
+                  "pm.test('Контент обновился', () => {",
                   "  pm.expect(json.content).to.eql(pm.variables.get('updatedContent'));",
                   "});"
                 ]
@@ -265,26 +278,30 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"content\": \"{{updatedContent}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "comments", "{{commentId}}"]
+              "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}"
             }
           }
         },
         {
-          "name": "2.2 Обновление чужого комментария (ошибка 404)",
+          "name": "2.2 Обновление чужого комментария (404)",
           "event": [
             {
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api_factory__'));",
                   "(async () => {",
                   "  try {",
                   "    const owner = await api.createUser();",
@@ -296,7 +313,7 @@
                   "",
                   "    pm.variables.set('userId', other.id);",
                   "    pm.variables.set('commentId', c.id);",
-                  "    pm.variables.set('updatedContent', 'Попытка изменения чужого');",
+                  "    pm.variables.set('updatedContent', 'Попытка изменить чужой комментарий');",
                   "  } catch (e) {",
                   "    throw new Error('Setup 2.2 failed: ' + e.message);",
                   "  }",
@@ -316,15 +333,18 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"content\": \"{{updatedContent}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "comments", "{{commentId}}"]
+              "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}"
             }
           }
         }
@@ -334,18 +354,19 @@
       "name": "3. Получение комментариев к событию (Public)",
       "item": [
         {
-          "name": "3.1 Успешное получение списка",
+          "name": "3.1 Получение списка комментариев",
           "event": [
             {
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api_factory__'));",
                   "(async () => {",
                   "  try {",
                   "    const f = await api.createPublishedEventFixture();",
-                  "    await api.createComment(f.user.id, f.event.id, 'Первый');",
-                  "    await api.createComment(f.user.id, f.event.id, 'Второй');",
+                  "    await api.createComment(f.user.id, f.event.id, 'Первый комментарий');",
+                  "    await api.createComment(f.user.id, f.event.id, 'Второй комментарий');",
                   "    pm.variables.set('eventId', f.event.id);",
                   "  } catch (e) {",
                   "    throw new Error('Setup 3.1 failed: ' + e.message);",
@@ -361,7 +382,7 @@
                 "exec": [
                   "pm.test('200 OK', () => pm.response.to.have.status(200));",
                   "const arr = pm.response.json();",
-                  "pm.test('Ответ массив и не пустой', () => {",
+                  "pm.test('Ответ массив, минимум 2 комментария', () => {",
                   "  pm.expect(arr).to.be.an('array');",
                   "  pm.expect(arr.length).to.be.at.least(2);",
                   "});"
@@ -371,15 +392,8 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/events/{{eventId}}/comments?from=0&size=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["events", "{{eventId}}", "comments"],
-              "query": [
-                { "key": "from", "value": "0" },
-                { "key": "size", "value": "10" }
-              ]
+              "raw": "{{baseUrl}}/events/{{eventId}}/comments?from=0&size=10"
             }
           }
         },
@@ -391,6 +405,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api_factory__'));",
                   "(async () => {",
                   "  try {",
                   "    const f = await api.createPublishedEventFixture();",
@@ -418,15 +433,8 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/events/{{eventId}}/comments?from=0&size=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["events", "{{eventId}}", "comments"],
-              "query": [
-                { "key": "from", "value": "0" },
-                { "key": "size", "value": "10" }
-              ]
+              "raw": "{{baseUrl}}/events/{{eventId}}/comments?from=0&size=10"
             }
           }
         }
@@ -436,18 +444,19 @@
       "name": "4. Получение своих комментариев (Private)",
       "item": [
         {
-          "name": "4.1 Успешное получение своих",
+          "name": "4.1 Получение своих комментариев",
           "event": [
             {
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api_factory__'));",
                   "(async () => {",
                   "  try {",
                   "    const f = await api.createPublishedEventFixture();",
-                  "    await api.createComment(f.user.id, f.event.id, 'Мой 1');",
-                  "    await api.createComment(f.user.id, f.event.id, 'Мой 2');",
+                  "    await api.createComment(f.user.id, f.event.id, 'Мой комментарий 1');",
+                  "    await api.createComment(f.user.id, f.event.id, 'Мой комментарий 2');",
                   "    pm.variables.set('userId', f.user.id);",
                   "  } catch (e) {",
                   "    throw new Error('Setup 4.1 failed: ' + e.message);",
@@ -463,7 +472,7 @@
                 "exec": [
                   "pm.test('200 OK', () => pm.response.to.have.status(200));",
                   "const arr = pm.response.json();",
-                  "pm.test('Есть комментарии', () => {",
+                  "pm.test('Есть комментарии пользователя', () => {",
                   "  pm.expect(arr).to.be.an('array');",
                   "  pm.expect(arr.length).to.be.at.least(2);",
                   "});"
@@ -473,15 +482,8 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}/comments?from=0&size=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "comments"],
-              "query": [
-                { "key": "from", "value": "0" },
-                { "key": "size", "value": "10" }
-              ]
+              "raw": "{{baseUrl}}/users/{{userId}}/comments?from=0&size=10"
             }
           }
         },
@@ -493,6 +495,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api_factory__'));",
                   "(async () => {",
                   "  try {",
                   "    const u = await api.createUser();",
@@ -520,15 +523,8 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}/comments?from=0&size=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "comments"],
-              "query": [
-                { "key": "from", "value": "0" },
-                { "key": "size", "value": "10" }
-              ]
+              "raw": "{{baseUrl}}/users/{{userId}}/comments?from=0&size=10"
             }
           }
         }
@@ -545,10 +541,11 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api_factory__'));",
                   "(async () => {",
                   "  try {",
                   "    const f = await api.createPublishedEventFixture();",
-                  "    const c = await api.createComment(f.user.id, f.event.id, 'На удаление');",
+                  "    const c = await api.createComment(f.user.id, f.event.id, 'Комментарий на удаление');",
                   "    pm.variables.set('userId', f.user.id);",
                   "    pm.variables.set('commentId', c.id);",
                   "  } catch (e) {",
@@ -570,22 +567,20 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "comments", "{{commentId}}"]
+              "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}"
             }
           }
         },
         {
-          "name": "5.2 Удаление чужого комментария (ошибка 404)",
+          "name": "5.2 Удаление чужого комментария (404)",
           "event": [
             {
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api_factory__'));",
                   "(async () => {",
                   "  try {",
                   "    const owner = await api.createUser();",
@@ -594,7 +589,6 @@
                   "    const ev = await api.createEvent(owner.id, cat.id);",
                   "    await api.publishEvent(ev.id);",
                   "    const c = await api.createComment(owner.id, ev.id, 'Чужой комментарий');",
-                  "",
                   "    pm.variables.set('userId', other.id);",
                   "    pm.variables.set('commentId', c.id);",
                   "  } catch (e) {",
@@ -616,11 +610,8 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "{{userId}}", "comments", "{{commentId}}"]
+              "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}"
             }
           }
         }
