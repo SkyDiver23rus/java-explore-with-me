@@ -1,25 +1,25 @@
-package ru.practicum.stat.client;
+package ru.practicum.main.server.config;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import ru.practicum.stat.client.StatsClient;
 
+@Component
 @Configuration
-public class StatsClientAutoConfiguration {
+public class StatsClientConfig {
 
-    @Value("${stats.server.url:http://localhost:9090}")
+    @Value("${stats.client.url:http://localhost:9090}")
     private String statsServerUrl;
 
     @Bean
-    @ConditionalOnMissingBean(RestTemplate.class)
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
 
     @Bean
-    @ConditionalOnMissingBean(StatsClient.class)
     public StatsClient statsClient(RestTemplate restTemplate) {
         return new StatsClient(restTemplate, statsServerUrl);
     }

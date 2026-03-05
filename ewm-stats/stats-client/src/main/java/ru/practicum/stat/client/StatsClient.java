@@ -1,5 +1,6 @@
 package ru.practicum.stat.client;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
@@ -15,6 +16,7 @@ import java.util.List;
 @Slf4j
 public class StatsClient {
     private final RestTemplate restTemplate;
+    @Getter
     private final String serverUrl;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -68,4 +70,5 @@ public class StatsClient {
     public List<ViewStats> getStats(LocalDateTime start, LocalDateTime end) {
         return getStats(start, end, null, false);
     }
+
 }
