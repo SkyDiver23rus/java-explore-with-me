@@ -1,0 +1,1075 @@
+{
+  "info": {
+    "_postman_id": "comments-api-final",
+    "name": "Explore With Me - Comments API",
+    "description": "Тесты для функциональности комментариев. Все тесты изолированы, каждый создаёт свои данные.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Подготовка тестовых данных",
+      "item": [
+        {
+          "name": "0.1 Создать пользователя (владелец)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.variables.set('ownerName', 'Владелец ' + ts);",
+                  "pm.variables.set('ownerEmail', 'owner.' + ts + '@test.com');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Пользователь создан', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.variables.set('ownerId', json.id);",
+                  "pm.variables.set('ownerName', json.name);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"{{ownerName}}\",\n    \"email\": \"{{ownerEmail}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "0.2 Создать второго пользователя",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.variables.set('otherName', 'Другой ' + ts);",
+                  "pm.variables.set('otherEmail', 'other.' + ts + '@test.com');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Пользователь создан', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.variables.set('otherId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"{{otherName}}\",\n    \"email\": \"{{otherEmail}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "0.3 Создать категорию",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.variables.set('categoryName', 'Категория ' + ts);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Категория создана', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.variables.set('categoryId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"{{categoryName}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "categories"]
+            }
+          }
+        },
+        {
+          "name": "0.4 Создать событие",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.variables.set('eventTitle', 'Событие ' + ts);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Событие создано', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.variables.set('eventId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"annotation\": \"Тестовая аннотация для события - достаточно длинное описание для тестирования комментариев\",\n    \"category\": {{categoryId}},\n    \"description\": \"Тестовое описание события - достаточно длинное описание для тестирования комментариев\",\n    \"eventDate\": \"2026-12-31 15:00:00\",\n    \"location\": {\n        \"lat\": 55.7558,\n        \"lon\": 37.6176\n    },\n    \"paid\": false,\n    \"participantLimit\": 100,\n    \"requestModeration\": true,\n    \"title\": \"{{eventTitle}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{ownerId}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{ownerId}}", "events"]
+            }
+          }
+        },
+        {
+          "name": "0.5 Опубликовать событие",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Событие опубликовано', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.expect(json.state).to.equal('PUBLISHED');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"stateAction\": \"PUBLISH_EVENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "events", "{{eventId}}"]
+            }
+          }
+        },
+        {
+          "name": "0.6 Создать пользователя без комментариев",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.variables.set('emptyName', 'Пустой ' + ts);",
+                  "pm.variables.set('emptyEmail', 'empty.' + ts + '@test.com');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Пользователь создан', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.variables.set('emptyUserId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"{{emptyName}}\",\n    \"email\": \"{{emptyEmail}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "0.7 Создать событие без комментариев",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.variables.set('emptyEventTitle', 'Событие без комментариев ' + ts);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Событие создано', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.variables.set('emptyEventId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"annotation\": \"Событие для теста пустого списка комментариев\",\n    \"category\": {{categoryId}},\n    \"description\": \"Это событие не будет иметь комментариев\",\n    \"eventDate\": \"2026-12-31 15:00:00\",\n    \"location\": {\n        \"lat\": 55.7558,\n        \"lon\": 37.6176\n    },\n    \"paid\": false,\n    \"participantLimit\": 100,\n    \"requestModeration\": true,\n    \"title\": \"{{emptyEventTitle}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{ownerId}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{ownerId}}", "events"]
+            }
+          }
+        },
+        {
+          "name": "0.8 Опубликовать событие без комментариев",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Событие опубликовано', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.expect(json.state).to.equal('PUBLISHED');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"stateAction\": \"PUBLISH_EVENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/events/{{emptyEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "events", "{{emptyEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "0.9 Создать комментарий от владельца",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.variables.set('commentText1', 'Отличное мероприятие! Всё очень понравилось, обязательно приду ещё.');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Комментарий создан', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.variables.set('commentId1', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"{{commentText1}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{ownerId}}/comments?eventId={{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{ownerId}}", "comments"],
+              "query": [
+                {
+                  "key": "eventId",
+                  "value": "{{eventId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.10 Создать комментарий от другого пользователя",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.variables.set('commentText2', 'Организация на высшем уровне, но хотелось бы больше времени на обсуждение.');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Комментарий создан', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.variables.set('commentId2', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"{{commentText2}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{otherId}}/comments?eventId={{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{otherId}}", "comments"],
+              "query": [
+                {
+                  "key": "eventId",
+                  "value": "{{eventId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Создание комментария (Private)",
+      "item": [
+        {
+          "name": "1.1 Успешное создание",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.variables.set('ownerName', 'Владелец ' + ts);",
+                  "pm.variables.set('ownerEmail', 'owner.' + ts + '@test.com');",
+                  "pm.variables.set('categoryName', 'Категория ' + ts);",
+                  "pm.variables.set('eventTitle', 'Событие ' + ts);",
+                  "",
+                  "// Создаём пользователя",
+                  "pm.sendRequest({",
+                  "    url: pm.variables.get('baseUrl') + '/admin/users',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "        mode: 'raw',",
+                  "        raw: JSON.stringify({",
+                  "            name: pm.variables.get('ownerName'),",
+                  "            email: pm.variables.get('ownerEmail')",
+                  "        })",
+                  "    }",
+                  "}, (err, res) => {",
+                  "    if (err) throw err;",
+                  "    pm.variables.set('ownerId', res.json().id);",
+                  "    ",
+                  "    // Создаём категорию",
+                  "    pm.sendRequest({",
+                  "        url: pm.variables.get('baseUrl') + '/admin/categories',",
+                  "        method: 'POST',",
+                  "        header: { 'Content-Type': 'application/json' },",
+                  "        body: {",
+                  "            mode: 'raw',",
+                  "            raw: JSON.stringify({ name: pm.variables.get('categoryName') })",
+                  "        }",
+                  "    }, (err2, res2) => {",
+                  "        if (err2) throw err2;",
+                  "        pm.variables.set('categoryId', res2.json().id);",
+                  "        ",
+                  "        // Создаём событие",
+                  "        pm.sendRequest({",
+                  "            url: pm.variables.get('baseUrl') + '/users/' + pm.variables.get('ownerId') + '/events',",
+                  "            method: 'POST',",
+                  "            header: { 'Content-Type': 'application/json' },",
+                  "            body: {",
+                  "                mode: 'raw',",
+                  "                raw: JSON.stringify({",
+                  "                    annotation: 'Тестовая аннотация для события',",
+                  "                    category: pm.variables.get('categoryId'),",
+                  "                    description: 'Тестовое описание события',",
+                  "                    eventDate: '2026-12-31 15:00:00',",
+                  "                    location: { lat: 55.7558, lon: 37.6176 },",
+                  "                    paid: false,",
+                  "                    participantLimit: 100,",
+                  "                    requestModeration: true,",
+                  "                    title: pm.variables.get('eventTitle')",
+                  "                })",
+                  "            }",
+                  "        }, (err3, res3) => {",
+                  "            if (err3) throw err3;",
+                  "            pm.variables.set('eventId', res3.json().id);",
+                  "            ",
+                  "            // Публикуем событие",
+                  "            pm.sendRequest({",
+                  "                url: pm.variables.get('baseUrl') + '/admin/events/' + pm.variables.get('eventId'),",
+                  "                method: 'PATCH',",
+                  "                header: { 'Content-Type': 'application/json' },",
+                  "                body: {",
+                  "                    mode: 'raw',",
+                  "                    raw: JSON.stringify({ stateAction: 'PUBLISH_EVENT' })",
+                  "                }",
+                  "            });",
+                  "        });",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.variables.set('newComment', 'Очень понравилось мероприятие! Обязательно приду ещё.');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 201 Created', () => pm.response.to.have.status(201));",
+                  "",
+                  "pm.test('Комментарий содержит все поля', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('text');",
+                  "    pm.expect(json).to.have.property('author');",
+                  "    pm.expect(json.author).to.have.property('id');",
+                  "    pm.expect(json.author).to.have.property('name');",
+                  "    pm.expect(json).to.have.property('eventId');",
+                  "    pm.expect(json).to.have.property('createdOn');",
+                  "});",
+                  "",
+                  "pm.test('Текст соответствует отправленному', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.text).to.equal(pm.variables.get('newComment'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"{{newComment}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{ownerId}}/comments?eventId={{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{ownerId}}", "comments"],
+              "query": [
+                {
+                  "key": "eventId",
+                  "value": "{{eventId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.2 Текст 350 символов (граничное значение)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.variables.set('ownerName', 'Владелец ' + ts);",
+                  "pm.variables.set('ownerEmail', 'owner.' + ts + '@test.com');",
+                  "pm.variables.set('categoryName', 'Категория ' + ts);",
+                  "pm.variables.set('eventTitle', 'Событие ' + ts);",
+                  "",
+                  "// Генерируем текст ровно 350 символов",
+                  "const commentText = 'а'.repeat(350);",
+                  "pm.variables.set('commentText', commentText);",
+                  "console.log('Длина текста для отправки:', commentText.length);",
+                  "",
+                  "// Создаём пользователя",
+                  "pm.sendRequest({",
+                  "    url: pm.variables.get('baseUrl') + '/admin/users',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "        mode: 'raw',",
+                  "        raw: JSON.stringify({",
+                  "            name: pm.variables.get('ownerName'),",
+                  "            email: pm.variables.get('ownerEmail')",
+                  "        })",
+                  "    }",
+                  "}, (err, res) => {",
+                  "    if (err) throw err;",
+                  "    pm.variables.set('ownerId', res.json().id);",
+                  "    ",
+                  "    // Создаём категорию",
+                  "    pm.sendRequest({",
+                  "        url: pm.variables.get('baseUrl') + '/admin/categories',",
+                  "        method: 'POST',",
+                  "        header: { 'Content-Type': 'application/json' },",
+                  "        body: {",
+                  "            mode: 'raw',",
+                  "            raw: JSON.stringify({ name: pm.variables.get('categoryName') })",
+                  "        }",
+                  "    }, (err2, res2) => {",
+                  "        if (err2) throw err2;",
+                  "        pm.variables.set('categoryId', res2.json().id);",
+                  "        ",
+                  "        // Создаём событие",
+                  "        pm.sendRequest({",
+                  "            url: pm.variables.get('baseUrl') + '/users/' + pm.variables.get('ownerId') + '/events',",
+                  "            method: 'POST',",
+                  "            header: { 'Content-Type': 'application/json' },",
+                  "            body: {",
+                  "                mode: 'raw',",
+                  "                raw: JSON.stringify({",
+                  "                    annotation: 'Тестовая аннотация для события',",
+                  "                    category: pm.variables.get('categoryId'),",
+                  "                    description: 'Тестовое описание события',",
+                  "                    eventDate: '2026-12-31 15:00:00',",
+                  "                    location: { lat: 55.7558, lon: 37.6176 },",
+                  "                    paid: false,",
+                  "                    participantLimit: 100,",
+                  "                    requestModeration: true,",
+                  "                    title: pm.variables.get('eventTitle')",
+                  "                })",
+                  "            }",
+                  "        }, (err3, res3) => {",
+                  "            if (err3) throw err3;",
+                  "            pm.variables.set('eventId', res3.json().id);",
+                  "            ",
+                  "            // Публикуем событие",
+                  "            pm.sendRequest({",
+                  "                url: pm.variables.get('baseUrl') + '/admin/events/' + pm.variables.get('eventId'),",
+                  "                method: 'PATCH',",
+                  "                header: { 'Content-Type': 'application/json' },",
+                  "                body: {",
+                  "                    mode: 'raw',",
+                  "                    raw: JSON.stringify({ stateAction: 'PUBLISH_EVENT' })",
+                  "                }",
+                  "            });",
+                  "        });",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 201 Created', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Длина текста = 350 символов', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.text.length).to.equal(350);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"{{commentText}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{ownerId}}/comments?eventId={{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{ownerId}}", "comments"],
+              "query": [
+                {
+                  "key": "eventId",
+                  "value": "{{eventId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.3 Пустой текст",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.variables.set('ownerName', 'Владелец ' + ts);",
+                  "pm.variables.set('ownerEmail', 'owner.' + ts + '@test.com');",
+                  "pm.variables.set('categoryName', 'Категория ' + ts);",
+                  "pm.variables.set('eventTitle', 'Событие ' + ts);",
+                  "",
+                  "// Создаём пользователя",
+                  "pm.sendRequest({",
+                  "    url: pm.variables.get('baseUrl') + '/admin/users',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "        mode: 'raw',",
+                  "        raw: JSON.stringify({",
+                  "            name: pm.variables.get('ownerName'),",
+                  "            email: pm.variables.get('ownerEmail')",
+                  "        })",
+                  "    }",
+                  "}, (err, res) => {",
+                  "    if (err) throw err;",
+                  "    pm.variables.set('ownerId', res.json().id);",
+                  "    ",
+                  "    // Создаём категорию",
+                  "    pm.sendRequest({",
+                  "        url: pm.variables.get('baseUrl') + '/admin/categories',",
+                  "        method: 'POST',",
+                  "        header: { 'Content-Type': 'application/json' },",
+                  "        body: {",
+                  "            mode: 'raw',",
+                  "            raw: JSON.stringify({ name: pm.variables.get('categoryName') })",
+                  "        }",
+                  "    }, (err2, res2) => {",
+                  "        if (err2) throw err2;",
+                  "        pm.variables.set('categoryId', res2.json().id);",
+                  "        ",
+                  "        // Создаём событие",
+                  "        pm.sendRequest({",
+                  "            url: pm.variables.get('baseUrl') + '/users/' + pm.variables.get('ownerId') + '/events',",
+                  "            method: 'POST',",
+                  "            header: { 'Content-Type': 'application/json' },",
+                  "            body: {",
+                  "                mode: 'raw',",
+                  "                raw: JSON.stringify({",
+                  "                    annotation: 'Тестовая аннотация для события',",
+                  "                    category: pm.variables.get('categoryId'),",
+                  "                    description: 'Тестовое описание события',",
+                  "                    eventDate: '2026-12-31 15:00:00',",
+                  "                    location: { lat: 55.7558, lon: 37.6176 },",
+                  "                    paid: false,",
+                  "                    participantLimit: 100,",
+                  "                    requestModeration: true,",
+                  "                    title: pm.variables.get('eventTitle')",
+                  "                })",
+                  "            }",
+                  "        }, (err3, res3) => {",
+                  "            if (err3) throw err3;",
+                  "            pm.variables.set('eventId', res3.json().id);",
+                  "            ",
+                  "            // Публикуем событие",
+                  "            pm.sendRequest({",
+                  "                url: pm.variables.get('baseUrl') + '/admin/events/' + pm.variables.get('eventId'),",
+                  "                method: 'PATCH',",
+                  "                header: { 'Content-Type': 'application/json' },",
+                  "                body: {",
+                  "                    mode: 'raw',",
+                  "                    raw: JSON.stringify({ stateAction: 'PUBLISH_EVENT' })",
+                  "                }",
+                  "            });",
+                  "        });",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{ownerId}}/comments?eventId={{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{ownerId}}", "comments"],
+              "query": [
+                {
+                  "key": "eventId",
+                  "value": "{{eventId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.4 Текст длиннее 350 символов",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.variables.set('ownerName', 'Владелец ' + ts);",
+                  "pm.variables.set('ownerEmail', 'owner.' + ts + '@test.com');",
+                  "pm.variables.set('categoryName', 'Категория ' + ts);",
+                  "pm.variables.set('eventTitle', 'Событие ' + ts);",
+                  "",
+                  "// Создаём пользователя",
+                  "pm.sendRequest({",
+                  "    url: pm.variables.get('baseUrl') + '/admin/users',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "        mode: 'raw',",
+                  "        raw: JSON.stringify({",
+                  "            name: pm.variables.get('ownerName'),",
+                  "            email: pm.variables.get('ownerEmail')",
+                  "        })",
+                  "    }",
+                  "}, (err, res) => {",
+                  "    if (err) throw err;",
+                  "    pm.variables.set('ownerId', res.json().id);",
+                  "    ",
+                  "    // Создаём категорию",
+                  "    pm.sendRequest({",
+                  "        url: pm.variables.get('baseUrl') + '/admin/categories',",
+                  "        method: 'POST',",
+                  "        header: { 'Content-Type': 'application/json' },",
+                  "        body: {",
+                  "            mode: 'raw',",
+                  "            raw: JSON.stringify({ name: pm.variables.get('categoryName') })",
+                  "        }",
+                  "    }, (err2, res2) => {",
+                  "        if (err2) throw err2;",
+                  "        pm.variables.set('categoryId', res2.json().id);",
+                  "        ",
+                  "        // Создаём событие",
+                  "        pm.sendRequest({",
+                  "            url: pm.variables.get('baseUrl') + '/users/' + pm.variables.get('ownerId') + '/events',",
+                  "            method: 'POST',",
+                  "            header: { 'Content-Type': 'application/json' },",
+                  "            body: {",
+                  "                mode: 'raw',",
+                  "                raw: JSON.stringify({",
+                  "                    annotation: 'Тестовая аннотация для события',",
+                  "                    category: pm.variables.get('categoryId'),",
+                  "                    description: 'Тестовое описание события',",
+                  "                    eventDate: '2026-12-31 15:00:00',",
+                  "                    location: { lat: 55.7558, lon: 37.6176 },",
+                  "                    paid: false,",
+                  "                    participantLimit: 100,",
+                  "                    requestModeration: true,",
+                  "                    title: pm.variables.get('eventTitle')",
+                  "                })",
+                  "            }",
+                  "        }, (err3, res3) => {",
+                  "            if (err3) throw err3;",
+                  "            pm.variables.set('eventId', res3.json().id);",
+                  "            ",
+                  "            // Публикуем событие",
+                  "            pm.sendRequest({",
+                  "                url: pm.variables.get('baseUrl') + '/admin/events/' + pm.variables.get('eventId'),",
+                  "                method: 'PATCH',",
+                  "                header: { 'Content-Type': 'application/json' },",
+                  "                body: {",
+                  "                    mode: 'raw',",
+                  "                    raw: JSON.stringify({ stateAction: 'PUBLISH_EVENT' })",
+                  "                }",
+                  "            });",
+                  "        });",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Этот комментарий длиннее трёхсот пятидесяти символов. Мы специально делаем его очень длинным, чтобы проверить, что валидация не пропускает слишком длинные тексты. Добавляем ещё много слов. Ещё немного. И ещё. Нужно превысить лимит. Добавляем бессмысленный текст, лишь бы набрать нужную длину. Вот сейчас уже достаточно. Но давайте добавим ещё, чтобы точно превысить. Ещё чуть-чуть. И ещё. Теперь должно быть больше 350. Проверяем, что система возвращает ошибку 400 Bad Request. Очень важно, чтобы пользователи не могли публиковать слишком длинные комментарии. Это может перегружать базу данных и ухудшать производительность. Поэтому лимит в 350 символов — это хорошо.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{ownerId}}/comments?eventId={{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{ownerId}}", "comments"],
+              "query": [
+                {
+                  "key": "eventId",
+                  "value": "{{eventId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.5 Несуществующий пользователь",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.variables.set('categoryName', 'Категория ' + ts);",
+                  "pm.variables.set('eventTitle', 'Событие ' + ts);",
+                  "pm.variables.set('ownerName', 'Владелец ' + ts);",
+                  "pm.variables.set('ownerEmail', 'owner.' + ts + '@test.com');",
+                  "",
+                  "// Создаём пользователя",
+                  "pm.sendRequest({",
+                  "    url: pm.variables.get('baseUrl') + '/admin/users',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "        mode: 'raw',",
+                  "        raw: JSON.stringify({",
+                  "            name: pm.variables.get('ownerName'),",
+                  "            email: pm.variables.get('ownerEmail')",
+                  "        })",
+                  "    }",
+                  "}, (err, res) => {",
+                  "    if (err) throw err;",
+                  "    pm.variables.set('ownerId', res.json().id);",
+                  "    ",
+                  "    // Создаём категорию",
+                  "    pm.sendRequest({",
+                  "        url: pm.variables.get('baseUrl') + '/admin/categories',",
+                  "        method: 'POST',",
+                  "        header: { 'Content-Type': 'application/json' },",
+                  "        body: {",
+                  "            mode: 'raw',",
+                  "            raw: JSON.stringify({ name: pm.variables.get('categoryName') })",
+                  "        }",
+                  "    }, (err2, res2) => {",
+                  "        if (err2) throw err2;",
+                  "        pm.variables.set('categoryId', res2.json().id);",
+                  "        ",
+                  "        // Создаём событие",
+                  "        pm.sendRequest({",
+                  "            url: pm.variables.get('baseUrl') + '/users/' + pm.variables.get('ownerId') + '/events',",
+                  "            method: 'POST',",
+                  "            header: { 'Content-Type': 'application/json' },",
+                  "            body: {",
+                  "                mode: 'raw',",
+                  "                raw: JSON.stringify({",
+                  "                    annotation: 'Тестовая аннотация для события',",
+                  "                    category: pm.variables.get('categoryId'),",
+                  "                    description: 'Тестовое описание события',",
+                  "                    eventDate: '2026-12-31 15:00:00',",
+                  "                    location: { lat: 55.7558, lon: 37.6176 },",
+                  "                    paid: false,",
+                  "                    participantLimit: 100,",
+                  "                    requestModeration: true,",
+                  "                    title: pm.variables.get('eventTitle')",
+                  "                })",
+                  "            }",
+                  "        }, (err3, res3) => {",
+                  "            if (err3) throw err3;",
+                  "            pm.variables.set('eventId', res3.json().id);",
+                  "            ",
+                  "            // Публикуем событие",
+                  "            pm.sendRequest({",
+                  "                url: pm.variables.get('baseUrl') + '/admin/events/' + pm.variables.get('eventId'),",
+                  "                method: 'PATCH',",
+                  "                header: { 'Content-Type': 'application/json' },",
+                  "                body: {",
+                  "                    mode: 'raw',",
+                  "                    raw: JSON.stringify({ stateAction: 'PUBLISH_EVENT' })",
+                  "                }",
+                  "            });",
+                  "        });",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 404 Not Found', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Тестовый комментарий\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/999999/comments?eventId={{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "999999", "comments"],
+              "query": [
+                {
+                  "key": "eventId",
+                  "value": "{{eventId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ]
+}
