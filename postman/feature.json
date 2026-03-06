@@ -1,0 +1,581 @@
+{
+  "info": {
+    "_postman_id": "Feature_Comments",
+    "name": "Explore With Me Feature_Comments",
+    "description": "Коллекция с изолированными тестами для функционала комментариев.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const helper = [",
+          "\"(() => {\",",
+          "\"  const BASE_URL = pm.collectionVariables.get('baseUrl') || 'http://localhost:8080';\",",
+          "\"  const send = (opt) => new Promise((resolve, reject) => pm.sendRequest(opt, (e, r) => e ? reject(e) : resolve(r)));\",",
+          "\"  const uniq = (p='t') => `${p}-${Date.now()}-${Math.floor(Math.random()*10000)}`;\",",
+          "\"  const ok = (res, code, msg) => pm.expect(res.code, msg || `Expected ${code}, got ${res.code}`).to.eql(code);\",",
+          "\"\",",
+          "\"  class API {\",",
+          "\"    async createUser() {\",",
+          "\"      const body = { name: uniq('user'), email: `${uniq('mail')}@test.com` };\",",
+          "\"      const res = await send({ url: BASE_URL + '/admin/users', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify(body) } });\",",
+          "\"      ok(res, 201, 'createUser failed');\",",
+          "\"      return res.json();\",",
+          "\"    }\",",
+          "\"\",",
+          "\"    async createCategory() {\",",
+          "\"      const body = { name: uniq('cat') };\",",
+          "\"      const res = await send({ url: BASE_URL + '/admin/categories', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify(body) } });\",",
+          "\"      ok(res, 201, 'createCategory failed');\",",
+          "\"      return res.json();\",",
+          "\"    }\",",
+          "\"\",",
+          "\"    async createEvent(ownerId, categoryId) {\",",
+          "\"      const body = {\",",
+          "\"        annotation: 'Аннотация комментариев: валидная длина больше двадцати символов',\",",
+          "\"        category: categoryId,\",",
+          "\"        description: 'Описание события для тестов комментариев, валидной длины и структуры',\",",
+          "\"        eventDate: '2030-12-31 15:00:00',\",",
+          "\"        location: { lat: 55.7558, lon: 37.6176 },\",",
+          "\"        paid: false,\",",
+          "\"        participantLimit: 100,\",",
+          "\"        requestModeration: true,\",",
+          "\"        title: uniq('event')\",",
+          "\"      };\",",
+          "\"      const res = await send({ url: BASE_URL + '/users/' + ownerId + '/events', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify(body) } });\",",
+          "\"      ok(res, 201, 'createEvent failed');\",",
+          "\"      return res.json();\",",
+          "\"    }\",",
+          "\"\",",
+          "\"    async publishEvent(eventId) {\",",
+          "\"      const res = await send({ url: BASE_URL + '/admin/events/' + eventId, method: 'PATCH', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify({ stateAction: 'PUBLISH_EVENT' }) } });\",",
+          "\"      ok(res, 200, 'publishEvent failed');\",",
+          "\"      return res.json();\",",
+          "\"    }\",",
+          "\"\",",
+          "\"    async createComment(userId, eventId, content) {\",",
+          "\"      const res = await send({ url: BASE_URL + '/users/' + userId + '/comments?eventId=' + eventId, method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify({ content }) } });\",",
+          "\"      ok(res, 201, 'createComment failed');\",",
+          "\"      return res.json();\",",
+          "\"    }\",",
+          "\"\",",
+          "\"    async fixturePublishedEvent() {\",",
+          "\"      const user = await this.createUser();\",",
+          "\"      const category = await this.createCategory();\",",
+          "\"      const event = await this.createEvent(user.id, category.id);\",",
+          "\"      await this.publishEvent(event.id);\",",
+          "\"      return { user, category, event };\",",
+          "\"    }\",",
+          "\"  }\",",
+          "\"\",",
+          "\"  return new API();\",",
+          "\"})()\"",
+          "];",
+          "pm.collectionVariables.set('__api__', helper.join('\\n'));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Private create/update/delete",
+      "item": [
+        {
+          "name": "1.1 create comment -> 201",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api__'));",
+                  "const main = async () => {",
+                  "  const f = await api.fixturePublishedEvent();",
+                  "  pm.collectionVariables.set('userId', String(f.user.id));",
+                  "  pm.collectionVariables.set('eventId', String(f.event.id));",
+                  "  pm.collectionVariables.set('content', 'Очень понравилось событие, спасибо!');",
+                  "};",
+                  "const i = setInterval(() => {}, 1000);",
+                  "setTimeout(async () => { try { await main(); } finally { clearInterval(i); } }, 50);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.expect(pm.response.code).to.eql(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('dto fields', () => {",
+                  "  pm.expect(j).to.have.property('id');",
+                  "  pm.expect(j).to.have.property('content');",
+                  "  pm.expect(j).to.have.property('author');",
+                  "  pm.expect(j).to.have.property('eventId');",
+                  "  pm.expect(j).to.have.property('state');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"{{content}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId/comments?eventId={{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":userId", "comments"],
+              "query": [{ "key": "eventId", "value": "{{eventId}}" }],
+              "variable": [{ "key": "userId", "value": "{{userId}}" }]
+            }
+          }
+        },
+        {
+          "name": "1.2 create too long comment -> 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api__'));",
+                  "const main = async () => {",
+                  "  const f = await api.fixturePublishedEvent();",
+                  "  pm.collectionVariables.set('userId', String(f.user.id));",
+                  "  pm.collectionVariables.set('eventId', String(f.event.id));",
+                  "  pm.collectionVariables.set('content', 'а'.repeat(351));",
+                  "};",
+                  "const i = setInterval(() => {}, 1000);",
+                  "setTimeout(async () => { try { await main(); } finally { clearInterval(i); } }, 50);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.expect(pm.response.code).to.eql(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"{{content}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId/comments?eventId={{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":userId", "comments"],
+              "query": [{ "key": "eventId", "value": "{{eventId}}" }],
+              "variable": [{ "key": "userId", "value": "{{userId}}" }]
+            }
+          }
+        },
+        {
+          "name": "1.3 update own comment -> 200",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api__'));",
+                  "const main = async () => {",
+                  "  const f = await api.fixturePublishedEvent();",
+                  "  const c = await api.createComment(f.user.id, f.event.id, 'Исходный комментарий');",
+                  "  pm.collectionVariables.set('userId', String(f.user.id));",
+                  "  pm.collectionVariables.set('commentId', String(c.id));",
+                  "  pm.collectionVariables.set('content', 'Обновлённый комментарий');",
+                  "};",
+                  "const i = setInterval(() => {}, 1000);",
+                  "setTimeout(async () => { try { await main(); } finally { clearInterval(i); } }, 50);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('updated content', () => pm.expect(j.content).to.eql(pm.collectionVariables.get('content')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"{{content}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId/comments/:commentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":userId", "comments", ":commentId"],
+              "variable": [
+                { "key": "userId", "value": "{{userId}}" },
+                { "key": "commentId", "value": "{{commentId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.4 update чужой comment -> 404",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api__'));",
+                  "const main = async () => {",
+                  "  const owner = await api.createUser();",
+                  "  const other = await api.createUser();",
+                  "  const cat = await api.createCategory();",
+                  "  const ev = await api.createEvent(owner.id, cat.id);",
+                  "  await api.publishEvent(ev.id);",
+                  "  const c = await api.createComment(owner.id, ev.id, 'Комментарий владельца');",
+                  "  pm.collectionVariables.set('userId', String(other.id));",
+                  "  pm.collectionVariables.set('commentId', String(c.id));",
+                  "  pm.collectionVariables.set('content', 'Чужой апдейт');",
+                  "};",
+                  "const i = setInterval(() => {}, 1000);",
+                  "setTimeout(async () => { try { await main(); } finally { clearInterval(i); } }, 50);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.expect(pm.response.code).to.eql(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"{{content}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId/comments/:commentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":userId", "comments", ":commentId"],
+              "variable": [
+                { "key": "userId", "value": "{{userId}}" },
+                { "key": "commentId", "value": "{{commentId}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Public + Private list",
+      "item": [
+        {
+          "name": "2.1 get event comments -> 200 array",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api__'));",
+                  "const main = async () => {",
+                  "  const f = await api.fixturePublishedEvent();",
+                  "  await api.createComment(f.user.id, f.event.id, 'Первый комментарий');",
+                  "  await api.createComment(f.user.id, f.event.id, 'Второй комментарий');",
+                  "  pm.collectionVariables.set('eventId', String(f.event.id));",
+                  "};",
+                  "const i = setInterval(() => {}, 1000);",
+                  "setTimeout(async () => { try { await main(); } finally { clearInterval(i); } }, 50);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const arr = pm.response.json();",
+                  "pm.test('array', () => pm.expect(arr).to.be.an('array'));",
+                  "pm.test('>=2', () => pm.expect(arr.length).to.be.at.least(2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/events/:eventId/comments?from=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", ":eventId", "comments"],
+              "query": [
+                { "key": "from", "value": "0" },
+                { "key": "size", "value": "10" }
+              ],
+              "variable": [{ "key": "eventId", "value": "{{eventId}}" }]
+            }
+          }
+        },
+        {
+          "name": "2.2 get user comments -> 200 array",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api__'));",
+                  "const main = async () => {",
+                  "  const f = await api.fixturePublishedEvent();",
+                  "  await api.createComment(f.user.id, f.event.id, 'Мой комментарий 1');",
+                  "  await api.createComment(f.user.id, f.event.id, 'Мой комментарий 2');",
+                  "  pm.collectionVariables.set('userId', String(f.user.id));",
+                  "};",
+                  "const i = setInterval(() => {}, 1000);",
+                  "setTimeout(async () => { try { await main(); } finally { clearInterval(i); } }, 50);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const arr = pm.response.json();",
+                  "pm.test('array', () => pm.expect(arr).to.be.an('array'));",
+                  "pm.test('>=2', () => pm.expect(arr.length).to.be.at.least(2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId/comments?from=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":userId", "comments"],
+              "query": [
+                { "key": "from", "value": "0" },
+                { "key": "size", "value": "10" }
+              ],
+              "variable": [{ "key": "userId", "value": "{{userId}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Delete (private + admin)",
+      "item": [
+        {
+          "name": "3.1 user delete own -> 204",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api__'));",
+                  "const main = async () => {",
+                  "  const f = await api.fixturePublishedEvent();",
+                  "  const c = await api.createComment(f.user.id, f.event.id, 'Комментарий на удаление');",
+                  "  pm.collectionVariables.set('userId', String(f.user.id));",
+                  "  pm.collectionVariables.set('commentId', String(c.id));",
+                  "};",
+                  "const i = setInterval(() => {}, 1000);",
+                  "setTimeout(async () => { try { await main(); } finally { clearInterval(i); } }, 50);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204', () => pm.expect(pm.response.code).to.eql(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId/comments/:commentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":userId", "comments", ":commentId"],
+              "variable": [
+                { "key": "userId", "value": "{{userId}}" },
+                { "key": "commentId", "value": "{{commentId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.2 admin delete comment -> 204",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api__'));",
+                  "const main = async () => {",
+                  "  const f = await api.fixturePublishedEvent();",
+                  "  const c = await api.createComment(f.user.id, f.event.id, 'Комментарий для админа');",
+                  "  pm.collectionVariables.set('commentId', String(c.id));",
+                  "};",
+                  "const i = setInterval(() => {}, 1000);",
+                  "setTimeout(async () => { try { await main(); } finally { clearInterval(i); } }, 50);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204', () => pm.expect(pm.response.code).to.eql(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/admin/comments/:commentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "comments", ":commentId"],
+              "variable": [{ "key": "commentId", "value": "{{commentId}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Admin search",
+      "item": [
+        {
+          "name": "4.1 search by eventId -> 200",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api__'));",
+                  "const main = async () => {",
+                  "  const f = await api.fixturePublishedEvent();",
+                  "  await api.createComment(f.user.id, f.event.id, 'Admin find comment');",
+                  "  pm.collectionVariables.set('eventId', String(f.event.id));",
+                  "};",
+                  "const i = setInterval(() => {}, 1000);",
+                  "setTimeout(async () => { try { await main(); } finally { clearInterval(i); } }, 50);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const arr = pm.response.json();",
+                  "pm.test('array', () => pm.expect(arr).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/comments?eventId={{eventId}}&from=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "comments"],
+              "query": [
+                { "key": "eventId", "value": "{{eventId}}" },
+                { "key": "from", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.2 search by userId -> 200",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const api = eval(pm.collectionVariables.get('__api__'));",
+                  "const main = async () => {",
+                  "  const f = await api.fixturePublishedEvent();",
+                  "  await api.createComment(f.user.id, f.event.id, 'User comments for admin search');",
+                  "  pm.collectionVariables.set('userId', String(f.user.id));",
+                  "};",
+                  "const i = setInterval(() => {}, 1000);",
+                  "setTimeout(async () => { try { await main(); } finally { clearInterval(i); } }, 50);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const arr = pm.response.json();",
+                  "pm.test('array', () => pm.expect(arr).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/comments?userId={{userId}}&from=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "comments"],
+              "query": [
+                { "key": "userId", "value": "{{userId}}" },
+                { "key": "from", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "userId", "value": "" },
+    { "key": "eventId", "value": "" },
+    { "key": "commentId", "value": "" },
+    { "key": "content", "value": "" }
+  ]
+}
